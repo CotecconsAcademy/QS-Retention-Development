@@ -1,0 +1,2081 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>QS Program Tracker — Coteccons</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{
+  --blue:#16315E;--teal:#5FD1C1;--green:#1baf7a;--amber:#eda100;
+  --red:#e34948;--accent:#2a78d6;--purple:#6c3fc5;--navy:#082352;
+  --surface:#f8f9fa;--card:#ffffff;
+  --border:rgba(0,0,0,.09);--border-strong:rgba(0,0,0,.14);
+  --text-primary:#0b0b0b;--text-secondary:#52514e;--text-muted:#898781;
+  --radius:8px;
+}
+[data-dark]{--surface:#111110;--card:#1a1a19;--border:rgba(255,255,255,.09);--border-strong:rgba(255,255,255,.16);--text-primary:#f5f5f4;--text-secondary:#c3c2b7;--text-muted:#898781;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:14px;color:var(--text-primary);background:var(--surface);min-height:100vh}
+
+/* Login overlay */
+.login-overlay{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:1000}
+.login-overlay.hidden{display:none}
+.login-card{background:var(--card);border-radius:14px;padding:2rem 2.25rem;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.login-card .logo{width:36px;height:36px;font-size:16px;margin-bottom:.75rem}
+.login-card h2{font-size:16px;font-weight:600;margin-bottom:2px}
+.login-card p{font-size:12px;color:var(--text-muted);margin-bottom:1.25rem}
+.login-card input{width:100%;height:38px;border-radius:var(--radius);border:.5px solid var(--border-strong);padding:0 11px;font-size:13px;margin-bottom:.625rem;outline:none;background:var(--surface);color:var(--text-primary)}
+.login-card input:focus{border-color:var(--teal)}
+.login-card button{width:100%;height:38px;border-radius:var(--radius);border:none;background:var(--teal);color:var(--blue);font-weight:600;font-size:13px;cursor:pointer;margin-top:.25rem}
+.login-card button:hover{background:#4abfaf}
+.login-card button:disabled{opacity:.6;cursor:not-allowed}
+.login-err{font-size:11px;color:var(--red);margin-top:.5rem;min-height:14px}
+.app-hidden{display:none !important}
+.userchip{font-size:11px;color:rgba(255,255,255,.65);display:flex;align-items:center;gap:5px}
+
+.topbar{background:var(--blue);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:200}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:28px;height:28px;background:var(--teal);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--blue);flex-shrink:0}
+.brand-text span{font-size:14px;font-weight:500;color:#fff;display:block}
+.brand-text small{font-size:11px;color:rgba(255,255,255,.5)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.badge-live{font-size:11px;padding:3px 9px;border-radius:999px;background:rgba(95,209,193,.15);color:var(--teal);border:.5px solid rgba(95,209,193,.3);display:flex;align-items:center;gap:4px}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:dp 1.6s ease-in-out infinite}
+@keyframes dp{0%,100%{opacity:1}50%{opacity:.35}}
+.btn-top{background:none;border:.5px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:var(--radius);padding:5px 10px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:5px}
+.btn-top:hover{background:rgba(255,255,255,.08);color:#fff}
+
+.tab-bar{background:var(--blue);border-bottom:2px solid rgba(255,255,255,.1);padding:0 1.5rem;display:flex}
+.tab-btn{padding:.625rem 1.25rem;font-size:13px;font-weight:500;color:rgba(255,255,255,.55);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:6px}
+.tab-btn:hover{color:rgba(255,255,255,.8)}
+.tab-btn.active{color:#fff;border-bottom-color:var(--teal)}
+.tbadge{font-size:10px;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.8)}
+.tbadge.red{background:rgba(233,72,72,.3);color:#ffcdd2}
+
+.main{max-width:1400px;margin:0 auto;padding:1.25rem 1.5rem 3rem}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* Upload */
+.upload-zone{border:1.5px dashed var(--border-strong);border-radius:12px;padding:2rem;text-align:center;cursor:pointer;background:var(--card);margin-bottom:1.25rem;transition:all .15s}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--teal);background:rgba(95,209,193,.04)}
+.upload-zone i{font-size:32px;color:var(--teal);display:block;margin-bottom:.5rem}
+.upload-zone h3{font-size:14px;font-weight:500;margin-bottom:4px}
+.upload-zone p{font-size:12px;color:var(--text-muted)}
+#fileInput{display:none}
+.file-bar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary);margin-top:.5rem;justify-content:center}
+
+/* KPI */
+.kpi-row{display:grid;gap:8px;margin-bottom:1.125rem}
+.kpi-r8{grid-template-columns:repeat(8,1fr)}
+.kpi-r6{grid-template-columns:repeat(6,1fr)}
+.kpi{background:var(--card);border-radius:10px;border:.5px solid var(--border);padding:.625rem .875rem}
+.kpi-l{font-size:10px;color:var(--text-muted);margin-bottom:3px;line-height:1.35}
+.kpi-v{font-size:20px;font-weight:500}
+.kpi-sub{font-size:10px;color:var(--text-muted);margin-top:2px}
+.kv-blue{color:var(--accent)}.kv-green{color:var(--green)}.kv-amber{color:var(--amber)}.kv-red{color:var(--red)}.kv-purple{color:var(--purple)}
+
+/* Alert */
+.alert{border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.5}
+.alert-red{background:#fdecea;border:.5px solid #ffcdd2;color:#8b1a1a}
+.alert i{font-size:16px;flex-shrink:0;margin-top:1px}
+
+/* Toolbar */
+.toolbar{display:flex;align-items:center;gap:7px;margin-bottom:.75rem;flex-wrap:wrap}
+.toolbar input,.toolbar select{height:31px;border-radius:var(--radius);border:.5px solid var(--border-strong);padding:0 9px;font-size:12px;background:var(--card);color:var(--text-primary);outline:none}
+.toolbar input{width:175px}
+.toolbar input:focus,.toolbar select:focus{border-color:var(--teal)}
+.t-right{margin-left:auto;display:flex;gap:7px}
+.btn{height:31px;padding:0 11px;border-radius:var(--radius);border:.5px solid var(--border-strong);font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;background:var(--card);color:var(--text-primary)}
+.btn:hover{background:var(--surface)}
+.btn-teal{background:var(--teal);border-color:var(--teal);color:var(--blue);font-weight:500}
+.btn-teal:hover{background:#4abfaf}
+
+.sbar{font-size:11px;color:var(--text-muted);margin-bottom:.625rem;display:flex;align-items:center;gap:6px}
+.sbar strong{color:var(--text-secondary)}
+
+/* Table */
+.table-card{background:var(--card);border-radius:12px;border:.5px solid var(--border);overflow:hidden}
+.tscroll{overflow-x:auto}
+.tscroll::-webkit-scrollbar{height:5px}
+.tscroll::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
+.tscroll::-webkit-scrollbar-thumb:hover{background:var(--teal)}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--surface)}
+th{padding:.4375rem .625rem;text-align:left;font-size:10px;font-weight:500;color:var(--text-muted);border-bottom:.5px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--text-secondary)}
+td{padding:.375rem .625rem;font-size:12px;border-bottom:.5px solid var(--border);vertical-align:middle;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr{cursor:pointer;transition:background .1s}
+tbody tr:hover{background:rgba(95,209,193,.04)}
+.tfooter{font-size:11px;color:var(--text-muted);padding:.3125rem .75rem;display:flex;justify-content:space-between;align-items:center}
+
+/* Sticky col */
+.stk{position:sticky;left:0;z-index:2;background:var(--card)}
+thead .stk{background:var(--surface);z-index:3}
+tbody tr:hover .stk{background:rgba(240,253,250,.8)}
+[data-dark] tbody tr:hover .stk{background:rgba(15,30,25,.7)}
+.stk::after{content:'';position:absolute;right:0;top:0;bottom:0;width:1px;background:var(--border-strong)}
+.nm{font-weight:500;font-size:12px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.en{font-size:10px;color:var(--text-muted)}
+
+/* Tags */
+.tag{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:500;white-space:nowrap}
+.t-green{background:#e8f5e9;color:#1a6b33}.t-red{background:#fdecea;color:#8b1a1a}
+.t-amber{background:#fef3cd;color:#7a4f00}.t-gray{background:var(--surface);color:var(--text-secondary);border:.5px solid var(--border-strong)}
+.t-blue{background:#e6f1fb;color:#0c447c}.t-purple{background:#f0edfe;color:#4a2d9c}
+.t-teal{background:#e0f7f4;color:#0a5a50}.t-navy{background:rgba(22,49,94,.1);color:#16315E}
+.t-mgmt{background:#e6f1fb;color:#0c447c}.t-expert{background:#f0edfe;color:#4a2d9c}
+
+/* Progress */
+.pm{display:flex;flex-direction:column;gap:2px;min-width:58px}
+.pm-bg{height:4px;border-radius:2px;background:var(--border-strong)}
+.pm-fill{height:4px;border-radius:2px}
+.pm-lbl{font-size:10px;color:var(--text-muted)}
+.los-w{display:flex;flex-direction:column;gap:2px}
+.los-bg{height:4px;border-radius:2px;background:var(--border-strong);width:52px}
+.los-fill{height:4px;border-radius:2px}
+
+/* Course cells */
+.cc{text-align:center;width:38px;min-width:38px}
+.cd{width:20px;height:20px;border-radius:50%;background:#e8f5e9;border:.5px solid #a5d6a7;display:inline-flex;align-items:center;justify-content:center;color:#1a6b33;font-size:10px}
+.ctd{width:20px;height:20px;border-radius:50%;background:var(--surface);border:.5px solid var(--border-strong);display:inline-flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:9px}
+.cna{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--border-strong)}
+.cs-done{width:22px;height:22px;border-radius:50%;background:#e8f5e9;border:1.5px solid #1baf7a;display:inline-flex;align-items:center;justify-content:center;color:#1a6b33;font-size:11px}
+.cs-miss{width:22px;height:22px;border-radius:50%;background:#fdecea;border:1.5px solid var(--red);display:inline-flex;align-items:center;justify-content:center;color:#8b1a1a;font-size:11px;animation:bk 2s ease-in-out infinite}
+@keyframes bk{0%,100%{opacity:1}50%{opacity:.45}}
+.cs-na{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--border-strong)}
+
+/* Course group headers */
+.th-qs{background:rgba(22,49,94,.07);color:#16315E}
+.th-qsl{background:rgba(43,120,214,.07);color:#185fa5}
+.th-dpm{background:rgba(108,63,197,.07);color:#4a2d9c}
+.th-site{background:rgba(233,72,72,.07);color:#8b1a1a}
+[data-dark] .th-qs{background:rgba(95,209,193,.08);color:#5fd1c1}
+[data-dark] .th-qsl{background:rgba(43,120,214,.1);color:#4cb3f8}
+[data-dark] .th-dpm{background:rgba(108,63,197,.1);color:#ce93d8}
+[data-dark] .th-site{background:rgba(233,72,72,.1);color:#f09595}
+
+/* Reality selects */
+.rsel{font-size:10px;font-weight:500;border:none;cursor:pointer;outline:none;border-radius:999px;padding:2px 7px;appearance:none;background:var(--surface);color:var(--text-secondary);border:.5px solid var(--border-strong)}
+.rsel:focus{border-color:var(--teal)}
+.rsel.sp{background:#e8f5e9;color:#1a6b33;border-color:#a5d6a7}
+.rsel.so{background:#e6f1fb;color:#0c447c;border-color:#90caf9}
+.rsel.sw{background:#f0edfe;color:#4a2d9c;border-color:#ce93d8}
+.rsel.sd{background:#e8f5e9;color:#1a6b33;border-color:#a5d6a7}
+.rsel.sw2{background:#fef3cd;color:#7a4f00;border-color:#ffe082}
+.div-col{border-left:2px solid var(--teal) !important}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);display:flex;align-items:center;justify-content:center;z-index:400;padding:1rem;opacity:0;pointer-events:none;transition:opacity .18s}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--card);border-radius:16px;border:.5px solid var(--border);width:100%;max-width:640px;max-height:90vh;overflow-y:auto;transform:translateY(12px);transition:transform .18s}
+.overlay.open .modal{transform:none}
+.mhdr{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.375rem;border-bottom:.5px solid var(--border);position:sticky;top:0;background:var(--card);z-index:1}
+.mhdr h2{font-size:15px;font-weight:500}
+.xbtn{background:none;border:none;cursor:pointer;color:var(--text-muted);padding:5px;border-radius:var(--radius);font-size:20px;display:flex}
+.xbtn:hover{background:var(--surface)}
+.mbody{padding:1.25rem 1.375rem}
+.avatar{width:44px;height:44px;border-radius:50%;background:rgba(22,49,94,.1);color:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
+.msec{font-size:10px;font-weight:600;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase;margin:1.1rem 0 .5rem;display:flex;align-items:center;gap:5px}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.dc{background:var(--surface);border-radius:var(--radius);padding:.5625rem .75rem;border:.5px solid var(--border)}
+.dl{font-size:10px;color:var(--text-muted);margin-bottom:3px}
+.dv{font-size:12px;font-weight:500}
+.prog-wrap{margin-bottom:.875rem}
+.prog-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px}
+.prog-bg{height:6px;border-radius:3px;background:var(--border-strong)}
+.prog-fill{height:6px;border-radius:3px}
+.tl{padding-left:1.375rem;position:relative}
+.tl::before{content:'';position:absolute;left:5px;top:6px;bottom:6px;width:1.5px;background:var(--border-strong)}
+.tl-item{position:relative;margin-bottom:.75rem}
+.tdot{width:12px;height:12px;border-radius:50%;border:2px solid var(--border-strong);background:var(--card);position:absolute;left:-1.375rem;top:2px}
+.tdot.done{background:var(--green);border-color:var(--green)}
+.tdot.now{background:var(--accent);border-color:var(--accent)}
+.tn{font-size:12px;font-weight:500}.ts{font-size:10px;color:var(--text-muted);margin-top:1px}
+.clist{display:flex;flex-direction:column;gap:5px}
+.ci{display:flex;align-items:center;gap:8px;padding:.4375rem .625rem;border-radius:var(--radius);border:.5px solid var(--border);background:var(--surface);font-size:11px}
+.ci.done{background:#f0fbf5;border-color:#c8e6c9}
+.ci.smiss{background:#fff8f8;border-color:#ffcdd2}
+.ci.sdone{background:#f0fbf5;border-color:#c8e6c9}
+.cii{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px}
+.cii.done{background:#e8f5e9;color:#1a6b33}.cii.todo{background:var(--surface);color:var(--text-muted);border:.5px solid var(--border-strong)}
+.cii.sdone{background:#e8f5e9;border:1.5px solid #1baf7a;color:#1a6b33}.cii.smiss{background:#fdecea;border:1.5px solid var(--red);color:#8b1a1a}
+.must-pill{font-size:9px;font-weight:500;padding:1px 6px;border-radius:999px;background:#fdecea;color:#8b1a1a;border:.5px solid #ffcdd2}
+.rcard{border-radius:9px;padding:.75rem .875rem;margin-bottom:.625rem;font-size:12px;line-height:1.5}
+.rok{background:#f0fbf5;border:.5px solid #c8e6c9}
+.rwarn{background:#fff8f8;border:.5px solid #ffcdd2}
+.rneutral{background:var(--surface);border:.5px solid var(--border)}
+.promo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:.375rem}
+.popt{border:1.5px solid var(--border-strong);border-radius:var(--radius);padding:.5rem .625rem;cursor:pointer;text-align:center;font-size:11px;font-weight:500;color:var(--text-secondary);transition:all .12s}
+.popt:hover{border-color:var(--teal)}
+.popt.ap{border-color:var(--green);background:#e8f5e9;color:#1a6b33}
+.popt.ao{border-color:var(--accent);background:#e6f1fb;color:#0c447c}
+.popt.aw{border-color:var(--purple);background:#f0edfe;color:#4a2d9c}
+.popt-ic{font-size:16px;display:block;margin-bottom:3px}
+
+/* Course config panel */
+.config-panel{background:var(--card);border-radius:12px;border:.5px solid var(--border);padding:1.25rem;margin-bottom:1.125rem}
+.config-panel h3{font-size:14px;font-weight:500;margin-bottom:.875rem;display:flex;align-items:center;gap:8px}
+.config-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.config-group{background:var(--surface);border-radius:var(--radius);padding:.875rem;border:.5px solid var(--border)}
+.config-group h4{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.625rem;display:flex;align-items:center;justify-content:space-between}
+.course-input-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.course-input-row input{flex:1;height:28px;font-size:11px;border-radius:var(--radius);border:.5px solid var(--border-strong);padding:0 8px;background:var(--card);color:var(--text-primary);outline:none}
+.course-input-row input:focus{border-color:var(--teal)}
+.course-input-row .ci-code{width:42px;font-size:10px;color:var(--text-muted);flex-shrink:0;font-weight:500}
+.btn-sm{height:24px;width:24px;border-radius:var(--radius);border:.5px solid var(--border-strong);background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:14px;flex-shrink:0}
+.btn-sm:hover{background:var(--surface);color:var(--red)}
+.btn-add{height:26px;font-size:11px;padding:0 10px;border-radius:var(--radius);border:.5px solid var(--teal);color:var(--teal);background:none;cursor:pointer;margin-top:4px;width:100%;display:flex;align-items:center;justify-content:center;gap:4px}
+.btn-add:hover{background:rgba(95,209,193,.08)}
+.btn-save-config{height:32px;padding:0 16px;border-radius:var(--radius);border:none;background:var(--teal);color:var(--blue);font-weight:500;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px}
+.btn-save-config:hover{background:#4abfaf}
+
+/* Path inline select */
+.path-sel{font-size:10px;font-weight:500;border:none;cursor:pointer;outline:none;border-radius:999px;padding:2px 8px;appearance:none;-webkit-appearance:none;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-secondary)}
+.path-sel:focus{border-color:var(--teal)}
+.path-sel.pm{background:#e6f1fb;color:#0c447c;border-color:#90caf9}
+.path-sel.pe{background:#f0edfe;color:#4a2d9c;border-color:#ce93d8}
+
+/* Site exp 3-status */
+.site-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:500;cursor:pointer;border:1.5px solid var(--border-strong);background:var(--surface);color:var(--text-muted);white-space:nowrap;transition:all .12s}
+.site-btn:hover{border-color:var(--teal)}
+.site-btn.sn{background:var(--surface);color:var(--text-muted);border-color:var(--border-strong)}
+.site-btn.sp{background:#fef3cd;color:#7a4f00;border-color:#ffe082}
+.site-btn.sd{background:#e8f5e9;color:#1a6b33;border-color:#a5d6a7}
+.site-btn.sd-block{background:#fdecea;color:#8b1a1a;border-color:#ffcdd2;animation:bk 2s ease-in-out infinite}
+
+/* Site project modal */
+.site-modal{position:fixed;inset:0;background:rgba(0,0,0,.42);display:flex;align-items:center;justify-content:center;z-index:500;padding:1rem;opacity:0;pointer-events:none;transition:opacity .18s}
+.site-modal.open{opacity:1;pointer-events:all}
+.site-modal-box{background:var(--card);border-radius:16px;border:.5px solid var(--border);width:100%;max-width:520px;max-height:85vh;overflow-y:auto;transform:translateY(12px);transition:transform .18s}
+.site-modal.open .site-modal-box{transform:none}
+.smhdr{display:flex;align-items:center;justify-content:space-between;padding:.875rem 1.25rem;border-bottom:.5px solid var(--border);position:sticky;top:0;background:var(--card);z-index:1}
+.smhdr h3{font-size:14px;font-weight:500}
+.smbody{padding:1.125rem 1.25rem}
+.status-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.125rem}
+.stab{border:1.5px solid var(--border-strong);border-radius:var(--radius);padding:.625rem;text-align:center;cursor:pointer;font-size:12px;font-weight:500;color:var(--text-secondary);transition:all .12s}
+.stab:hover{border-color:var(--teal)}
+.stab.active-ns{border-color:var(--border-strong);background:var(--surface);color:var(--text-muted)}
+.stab.active-pr{border-color:#eda100;background:#fef3cd;color:#7a4f00}
+.stab.active-dn{border-color:#1baf7a;background:#e8f5e9;color:#1a6b33}
+.stab-ic{font-size:18px;display:block;margin-bottom:4px}
+.proj-list{display:flex;flex-direction:column;gap:8px;margin-bottom:.875rem}
+.proj-card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--radius);padding:.625rem .875rem;display:flex;align-items:center;gap:8px}
+.proj-card input{flex:1;height:28px;font-size:12px;border-radius:var(--radius);border:.5px solid var(--border-strong);padding:0 8px;background:var(--card);color:var(--text-primary);outline:none}
+.proj-card input:focus{border-color:var(--teal)}
+.proj-card input[type=date]{width:130px;flex:none}
+.proj-card .proj-label{font-size:10px;color:var(--text-muted);white-space:nowrap;flex-shrink:0}
+.btn-add-proj{height:30px;font-size:12px;padding:0 12px;border-radius:var(--radius);border:.5px solid var(--teal);color:var(--teal);background:none;cursor:pointer;display:flex;align-items:center;gap:5px;width:100%;justify-content:center;margin-top:4px}
+.btn-add-proj:hover{background:rgba(95,209,193,.08)}
+.btn-rm-proj{background:none;border:none;cursor:pointer;color:var(--text-muted);padding:3px;border-radius:var(--radius);display:flex;flex-shrink:0}
+.btn-rm-proj:hover{color:var(--red);background:var(--surface)}
+.site-save-btn{width:100%;height:34px;border-radius:var(--radius);border:none;background:var(--teal);color:var(--blue);font-weight:500;font-size:13px;cursor:pointer;margin-top:.875rem}
+.site-save-btn:hover{background:#4abfaf}
+
+/* Dual upload zones */
+.upload-dual{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem}
+.upload-zone-sm{border:1.5px dashed var(--border-strong);border-radius:10px;padding:1.25rem 1rem;text-align:center;cursor:pointer;background:var(--card);transition:all .15s}
+.upload-zone-sm:hover,.upload-zone-sm.drag{border-color:var(--teal);background:rgba(95,209,193,.04)}
+.upload-zone-sm i{font-size:24px;display:block;margin-bottom:.375rem}
+.upload-zone-sm h4{font-size:13px;font-weight:500;margin-bottom:3px}
+.upload-zone-sm p{font-size:11px;color:var(--text-muted)}
+.uz-hrbp i{color:#2a78d6}.uz-lod i{color:#1baf7a}
+.uz-hrbp{border-color:rgba(42,120,214,.25)}.uz-hrbp:hover{border-color:#2a78d6}
+.uz-lod{border-color:rgba(27,175,122,.25)}.uz-lod:hover{border-color:#1baf7a}
+/* Merge report */
+.merge-report{background:var(--card);border:.5px solid var(--border);border-radius:10px;padding:.875rem 1.125rem;margin-bottom:1rem;display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;font-size:12px}
+.merge-report .mr-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-right:auto}
+.mr-stat{display:flex;flex-direction:column;align-items:center;gap:2px}
+.mr-num{font-size:18px;font-weight:500}
+.mr-desc{font-size:10px;color:var(--text-muted);white-space:nowrap}
+.mr-add{color:var(--green)}.mr-upd{color:var(--accent)}.mr-keep{color:var(--text-muted)}.mr-rm{color:var(--red)}
+/* Active file badges */
+.active-files{display:flex;gap:8px;flex-wrap:wrap;margin-top:.5rem}
+.af-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:999px;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-secondary)}
+.af-badge .af-x{cursor:pointer;color:var(--text-muted);margin-left:2px}
+.af-badge .af-x:hover{color:var(--red)}
+
+/* Checkbox select */
+.cb-col{width:36px;min-width:36px;text-align:center;padding:0 4px !important}
+.row-cb{width:15px;height:15px;cursor:pointer;accent-color:var(--red)}
+.th-cb{width:36px;min-width:36px;text-align:center;padding:0 4px !important}
+/* Delete bar */
+.del-bar{display:none;align-items:center;gap:10px;padding:.5rem .875rem;background:#fdecea;border:.5px solid #ffcdd2;border-radius:var(--radius);margin-bottom:.625rem;font-size:12px;color:#8b1a1a}
+.del-bar.show{display:flex}
+.del-bar strong{font-weight:600}
+.btn-del{height:28px;padding:0 12px;border-radius:var(--radius);border:none;background:var(--red);color:#fff;font-size:12px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.btn-del:hover{background:#c0392b}
+.btn-del-cancel{height:28px;padding:0 10px;border-radius:var(--radius);border:.5px solid #ffcdd2;background:none;color:#8b1a1a;font-size:12px;cursor:pointer}
+.btn-del-cancel:hover{background:#fff0f0}
+.select-mode-btn{height:31px;padding:0 11px;border-radius:var(--radius);border:.5px solid var(--red);color:var(--red);background:none;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.select-mode-btn:hover{background:#fff0f0}
+.select-mode-btn.active{background:var(--red);color:#fff;border-color:var(--red)}
+/* Row selected highlight */
+tbody tr.sel-row{background:rgba(233,73,72,.06) !important}
+tbody tr.sel-row .stk{background:rgba(233,73,72,.06) !important}
+/* Confirm modal */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:600;opacity:0;pointer-events:none;transition:opacity .15s}
+.confirm-overlay.open{opacity:1;pointer-events:all}
+.confirm-box{background:var(--card);border-radius:12px;border:.5px solid var(--border);width:100%;max-width:400px;padding:1.5rem;text-align:center}
+.confirm-box h3{font-size:16px;font-weight:500;margin-bottom:.5rem}
+.confirm-box p{font-size:13px;color:var(--text-secondary);margin-bottom:1.25rem;line-height:1.5}
+.confirm-btns{display:flex;gap:8px;justify-content:center}
+.btn-confirm-del{height:36px;padding:0 20px;border-radius:var(--radius);border:none;background:var(--red);color:#fff;font-weight:500;font-size:13px;cursor:pointer}
+.btn-confirm-del:hover{background:#c0392b}
+.btn-confirm-cancel{height:36px;padding:0 20px;border-radius:var(--radius);border:.5px solid var(--border-strong);background:var(--card);color:var(--text-primary);font-size:13px;cursor:pointer}
+.btn-confirm-cancel:hover{background:var(--surface)}
+
+.nm:hover + .quick-del-btn, .quick-del-btn:hover{opacity:1 !important}
+tbody tr:hover .quick-del-btn{opacity:0.5}
+tbody tr:hover .quick-del-btn:hover{opacity:1 !important;color:var(--red)}
+.config-note{font-size:11px;color:var(--text-muted);margin-top:.625rem;display:flex;align-items:flex-start;gap:5px;line-height:1.4}
+</style>
+</head>
+<body>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="logo">C</div>
+    <h2>QS Program Tracker</h2>
+    <p>Coteccons &mdash; Human Capital &mdash; đăng nhập để tiếp tục</p>
+    <input type="email" id="loginEmail" placeholder="Email công ty" autocomplete="username">
+    <input type="password" id="loginPass" placeholder="Mật khẩu" autocomplete="current-password">
+    <button id="loginBtn" onclick="doLogin()">Đăng nhập</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<div id="appRoot" class="app-hidden">
+
+<div class="topbar">
+  <div class="brand">
+    <div class="logo">C</div>
+    <div class="brand-text">
+      <span>QS Program Tracker</span>
+      <small>Coteccons &mdash; Human Capital &mdash; FY26</small>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="badge-live"><span class="dot"></span>Live</span>
+    <span class="userchip"><i class="ti ti-user-circle"></i><span id="userEmail"></span></span>
+    <button class="btn-top" onclick="toggleDark()"><i class="ti ti-moon"></i> Dark</button>
+    <button class="btn-top" onclick="openImportForTab()"><i class="ti ti-upload"></i> Import Excel</button>
+    <button class="btn-top" onclick="doLogout()"><i class="ti ti-logout"></i> Đăng xuất</button>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('retention',this)">
+    <i class="ti ti-shield-check"></i> Retention &amp; Promotion
+    <span class="tbadge" id="tb1">0</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('learning',this)">
+    <i class="ti ti-book"></i> Learning &amp; Development
+    <span class="tbadge" id="tb2">0</span>
+    <span class="tbadge red" id="tbSite" style="display:none"></span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('config',this)">
+    <i class="ti ti-settings"></i> Course Config
+  </button>
+</div>
+
+<div class="main">
+
+
+  <div id="uploadSection">
+    <div class="upload-dual">
+      <!-- HRBP: Retention -->
+      <div class="upload-zone-sm uz-hrbp" id="uzHRBP"
+           onclick="document.getElementById('fileRet').click()"
+           ondragover="onDragZone(event,'uzHRBP',true)" ondragleave="onDragZone(event,'uzHRBP',false)" ondrop="onDropZone(event,'retention')">
+        <i class="ti ti-shield-check"></i>
+        <h4>Import Retention Data</h4>
+        <p>Dành cho HRBP &mdash; thông tin nhân viên, chức danh, performance, retention</p>
+      </div>
+      <!-- L&OD: Learning -->
+      <div class="upload-zone-sm uz-lod" id="uzLOD"
+           onclick="document.getElementById('fileLrn').click()"
+           ondragover="onDragZone(event,'uzLOD',true)" ondragleave="onDragZone(event,'uzLOD',false)" ondrop="onDropZone(event,'learning')">
+        <i class="ti ti-book"></i>
+        <h4>Import Learning Data</h4>
+        <p>Dành cho L&amp;OD &mdash; khóa học, site experience, course config</p>
+      </div>
+    </div>
+    <input type="file" id="fileRet" accept=".xlsx,.xls" onchange="handleFileTyped(event,'retention')" style="display:none">
+    <input type="file" id="fileLrn" accept=".xlsx,.xls" onchange="handleFileTyped(event,'learning')" style="display:none">
+    <div class="active-files" id="activeFiles"></div>
+    <div id="mergeReport" style="display:none"></div>
+  </div>
+
+  <!-- TAB 1: Retention & Promotion -->
+  <div class="tab-panel active" id="panel-retention">
+    <div class="kpi-row kpi-r8" id="kpiR"></div>
+    <div id="alertR"></div>
+    <div class="toolbar">
+      <input type="text" id="srchR" placeholder="Tìm tên / mã NV..." oninput="renderR()">
+      <select id="fPosR" onchange="renderR()"><option value="">Tất cả chức danh</option></select>
+      <select id="fBUR" onchange="renderR()"><option value="">Tất cả BU</option></select>
+      <select id="fPathR" onchange="renderR()">
+        <option value="">Tất cả path</option>
+        <option value="Management Path">Management Path</option>
+        <option value="Expertise Path">Expertise Path</option>
+      </select>
+      <select id="fReadyR" onchange="renderR()">
+        <option value="">Tất cả readiness</option>
+        <option value="Yes - Ready">Yes - Ready</option>
+        <option value="Đủ năm, chờ Perf">Đủ năm, chờ Perf</option>
+        <option value="Not Yet">Not Yet</option>
+      </select>
+      <div class="t-right">
+        <button class="btn" onclick="document.getElementById('fileRet').click()" title="Import/cập nhật file Retention Excel cho trang này"><i class="ti ti-upload"></i> Import Retention Excel</button>
+        <button class="select-mode-btn" id="selectModeBtn" onclick="toggleSelectMode()"><i class="ti ti-checkbox"></i> Chọn để xóa</button>
+        <button class="btn" onclick="exportCSV('R')"><i class="ti ti-download"></i> Export</button>
+      </div>
+    </div>
+    <div class="del-bar" id="delBar">
+      <i class="ti ti-trash" style="font-size:16px"></i>
+      <span>Đã chọn <strong id="selCount">0</strong> nhân viên</span>
+      <button class="btn-del" onclick="confirmDelete()"><i class="ti ti-trash"></i> Xóa khỏi danh sách</button>
+      <button class="btn-del-cancel" onclick="exitSelectMode()">Hủy</button>
+      <span style="margin-left:auto;font-size:11px;color:#8b1a1a">Hành động này chỉ xóa khỏi web — không ảnh hưởng file Excel</span>
+    </div>
+    <div class="sbar"><span class="dot" style="color:var(--teal)"></span><strong id="cShR">0</strong>/<strong id="cToR">0</strong> NV &mdash; <strong id="updR"></strong></div>
+    <div class="table-card">
+      <div class="tscroll"><table><thead id="headR"></thead><tbody id="tbodyR"></tbody></table></div>
+      <div class="tfooter"><span></span><span><i class="ti ti-arrows-left-right" style="font-size:11px"></i> Kéo ngang</span></div>
+    </div>
+  </div>
+
+  <!-- TAB 2: Learning -->
+  <div class="tab-panel" id="panel-learning">
+    <div class="kpi-row kpi-r6" id="kpiL"></div>
+    <div id="alertL"></div>
+    <div class="toolbar">
+      <input type="text" id="srchL" placeholder="Tìm tên / mã NV..." oninput="renderL()">
+      <select id="fPosL" onchange="renderL()"><option value="">Tất cả chức danh</option></select>
+      <select id="fBUL" onchange="renderL()"><option value="">Tất cả BU</option></select>
+      <select id="fPathL" onchange="renderL()">
+        <option value="">Tất cả path</option>
+        <option value="Management Path">Management Path</option>
+        <option value="Expertise Path">Expertise Path</option>
+      </select>
+      <select id="fDevL" onchange="renderL()">
+        <option value="">Tất cả dev status</option>
+        <option value="ok">Learning Qualified</option>
+        <option value="site">Thiếu Site Exp</option>
+        <option value="courses">Còn thiếu khóa</option>
+      </select>
+      <div class="t-right">
+        <button class="btn" onclick="document.getElementById('fileLrn').click()" title="Import/cập nhật file Learning Excel cho trang này"><i class="ti ti-upload"></i> Import Learning Excel</button>
+        <button class="btn" onclick="exportCSV('L')"><i class="ti ti-download"></i> Export</button>
+      </div>
+    </div>
+    <div class="sbar"><span class="dot" style="color:var(--teal)"></span><strong id="cShL">0</strong>/<strong id="cToL">0</strong> NV</div>
+    <div class="table-card">
+      <div class="tscroll"><table><thead id="headL"></thead><tbody id="tbodyL"></tbody></table></div>
+      <div class="tfooter">
+        <span style="display:flex;align-items:center;gap:8px;font-size:11px">
+          <span><span class="cd" style="width:14px;height:14px;font-size:8px"><i class="ti ti-check"></i></span> Done (bắt buộc)</span>
+          <span><span class="site-btn sp" style="font-size:9px;padding:1px 5px"><i class="ti ti-loader" style="font-size:9px"></i>Progressing</span> Site Exp</span>
+          <span><span class="site-btn sn" style="font-size:9px;padding:1px 5px"><i class="ti ti-circle-dashed" style="font-size:9px"></i>Not Started</span> Site Exp (bị block)</span>
+          <span><span class="cna" style="width:14px;height:14px;font-size:11px">·</span> Không áp dụng</span>
+        </span>
+        <span><i class="ti ti-arrows-left-right" style="font-size:11px"></i> Kéo ngang</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: Course Config -->
+  <div class="tab-panel" id="panel-config">
+    <div class="config-panel">
+      <h3><i class="ti ti-settings" style="color:var(--teal)"></i> Cấu hình khóa học — Tối đa 6 khóa mỗi level</h3>
+      <div class="config-grid" id="configGrid"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:1rem">
+        <div class="config-note">
+          <i class="ti ti-info-circle" style="color:var(--teal);font-size:14px;flex-shrink:0"></i>
+          <span>Sửa tên khóa học tại đây rồi bấm <strong>Lưu cấu hình</strong>. Toàn bộ Tab Learning sẽ tự cập nhật. Các khóa này là <strong>bắt buộc hoàn thành</strong> để đủ điều kiện promote.</span>
+        </div>
+        <button class="btn-save-config" onclick="saveConfig()"><i class="ti ti-device-floppy"></i> Lưu cấu hình</button>
+      </div>
+    </div>
+    <div id="configPreview" style="font-size:12px;color:var(--text-muted);text-align:center;padding:1rem">Lưu cấu hình để xem preview →</div>
+  </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="confirm-overlay" id="confirmOverlay" onclick="if(event.target.id==='confirmOverlay')closeConfirm()">
+  <div class="confirm-box">
+    <div style="font-size:36px;margin-bottom:.75rem">🗑️</div>
+    <h3>Xóa nhân viên đã chọn?</h3>
+    <p id="confirmMsg">Hành động này sẽ xóa các nhân viên đã chọn khỏi web tracker.<br><strong>Không ảnh hưởng đến file Excel gốc.</strong><br>Có thể import lại bất cứ lúc nào.</p>
+    <div class="confirm-btns">
+      <button class="btn-confirm-cancel" onclick="closeConfirm()">Hủy</button>
+      <button class="btn-confirm-del" onclick="executeDelete()"><i class="ti ti-trash"></i> Xóa</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay" onclick="closeBg(event)">
+  <div class="modal">
+    <div class="mhdr"><h2 id="mTitle">Chi tiết</h2><button class="xbtn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+    <div class="mbody" id="mBody"></div>
+  </div>
+</div>
+
+<!-- Site Experience Modal -->
+<div class="site-modal" id="siteModal" onclick="closeSiteModal(event)">
+  <div class="site-modal-box">
+    <div class="smhdr">
+      <h3 id="smTitle">Site Experience</h3>
+      <button class="xbtn" onclick="closeSiteModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="smbody" id="smBody"></div>
+  </div>
+</div>
+
+</div><!-- /#appRoot -->
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ══════════════════════════════════════════════════
+   SUPABASE CLIENT
+══════════════════════════════════════════════════ */
+var SUPABASE_URL = 'https://pibezwhgxglqkjziwzkj.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBpYmV6d2hneGdscWtqeml3emtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1NTM1NTMsImV4cCI6MjA5OTEyOTU1M30.4_owxqIXzOzP5IwbmxuIPa0JUOPoOoUinNQWlr1PDM0';
+if (typeof window.__qsSupabaseClient === 'undefined') {
+  window.__qsSupabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+var supabase = window.__qsSupabaseClient;
+
+/* ══════════════════════════════════════════════════
+   AUTH
+══════════════════════════════════════════════════ */
+async function doLogin(){
+  var email=document.getElementById('loginEmail').value.trim();
+  var pass=document.getElementById('loginPass').value;
+  var errEl=document.getElementById('loginErr');
+  var btn=document.getElementById('loginBtn');
+  errEl.textContent='';
+  if(!email||!pass){errEl.textContent='Nhập email và mật khẩu.';return;}
+  btn.disabled=true;btn.textContent='Đang đăng nhập...';
+  try{
+    const {data,error}=await supabase.auth.signInWithPassword({email:email,password:pass});
+    btn.disabled=false;btn.textContent='Đăng nhập';
+    if(error){errEl.textContent='Sai email hoặc mật khẩu.';return;}
+    await onAuthed(data.session);
+  }catch(networkErr){
+    btn.disabled=false;btn.textContent='Đăng nhập';
+    console.error('Login network error:',networkErr);
+    errEl.textContent='Không kết nối được tới Supabase (lỗi mạng). Nếu đang xem ở preview trong chat, hãy mở file này trực tiếp bằng trình duyệt (double-click file .html) hoặc qua link GitHub Pages.';
+  }
+}
+
+async function doLogout(){
+  await supabase.auth.signOut();
+  document.getElementById('appRoot').classList.add('app-hidden');
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  employees=[];
+}
+
+async function onAuthed(session){
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('appRoot').classList.remove('app-hidden');
+  document.getElementById('userEmail').textContent=session.user.email;
+  await fetchCourseConfig();
+  await fetchEmployees();
+}
+
+async function fetchCourseConfig(){
+  const {data,error}=await supabase.from('course_config').select('*');
+  if(error){console.error('fetchCourseConfig error:',error);return;}
+  if(data&&data.length){
+    const grouped={};
+    data.forEach(function(row){
+      if(!grouped[row.level])grouped[row.level]=[];
+      grouped[row.level].push({code:row.code,name:row.name});
+    });
+    COURSE_CONFIG=grouped;
+  }
+  // Nếu bảng course_config rỗng (project mới), giữ nguyên COURSE_CONFIG mặc định
+  // và đẩy nó lên Supabase để lần sau có dữ liệu.
+  else{
+    const rows=[];
+    Object.keys(COURSE_CONFIG).forEach(level=>{
+      (COURSE_CONFIG[level]||[]).forEach(c=>rows.push({code:c.code,level:level,name:c.name}));
+    });
+    if(rows.length)await supabase.from('course_config').upsert(rows,{onConflict:'code'});
+  }
+}
+
+async function checkSessionOnLoad(){
+  try{
+    const {data}=await supabase.auth.getSession();
+    if(data&&data.session){
+      await onAuthed(data.session);
+    }
+  }catch(networkErr){
+    console.error('checkSessionOnLoad network error:',networkErr);
+  }
+  // Allow Enter key to submit login
+  ['loginEmail','loginPass'].forEach(function(id){
+    document.getElementById(id).addEventListener('keydown',function(e){
+      if(e.key==='Enter')doLogin();
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   SUPABASE DATA SYNC (employees table)
+══════════════════════════════════════════════════ */
+function empToRow(e){
+  return {
+    emp_no:String(e.empNo||e.name),
+    stt:e.stt||null,
+    name:e.name,
+    bu:e.bu||'',
+    phong:e.phong||'',
+    pos:e.pos||'',
+    dev_path:e.devPath||'',
+    ngay_vao:e.ngayVao?e.ngayVao.toISOString().slice(0,10):null,
+    ngay_bd:e.ngayBD?e.ngayBD.toISOString().slice(0,10):null,
+    p24:e.p24||'',p25:e.p25||'',p26:e.p26||'',
+    ret_done:e.retDone||'',
+    promo_r:e.promoR||'',
+    ret_r:e.retR||'',
+    site_status:e.siteStatus||'Not Started',
+    site_projects:e.siteProjects||[],
+    courses:e.courses||{},
+    is_active:true
+  };
+}
+
+function rowToEmp(d){
+  return {
+    empNo:d.emp_no, stt:d.stt, name:d.name, bu:d.bu, phong:d.phong,
+    pos:d.pos, devPath:d.dev_path,
+    ngayVao:d.ngay_vao?new Date(d.ngay_vao):null,
+    ngayBD:d.ngay_bd?new Date(d.ngay_bd):null,
+    p24:d.p24, p25:d.p25, p26:d.p26, retDone:d.ret_done,
+    promoR:d.promo_r, retR:d.ret_r,
+    siteStatus:d.site_status, siteProjects:d.site_projects||[],
+    courses:d.courses||{}
+  };
+}
+
+async function fetchEmployees(){
+  const {data,error}=await supabase.from('employees').select('*').eq('is_active',true);
+  if(error){console.error('fetchEmployees error:',error);return;}
+  employees=(data||[]).map(function(d){
+    var e=rowToEmp(d);
+    var allCodes=['SITE',...Object.values(COURSE_CONFIG).flat().map(function(c){return c.code;})];
+    allCodes.forEach(function(code){if(!(code in e.courses))e.courses[code]=false;});
+    calcAll(e);
+    return e;
+  });
+  showDashboard();
+}
+
+async function pushToSupabase(rows){
+  if(!rows||!rows.length)return;
+  const payload=rows.map(empToRow);
+  const {error}=await supabase.from('employees').upsert(payload,{onConflict:'emp_no'});
+  if(error)console.error('Upsert error:',error);
+}
+
+async function updateEmployeeField(empNo,fields){
+  if(!empNo)return;
+  const {error}=await supabase.from('employees').update(fields).eq('emp_no',String(empNo));
+  if(error)console.error('Update error:',error);
+}
+
+async function softDeleteEmployees(empNos){
+  if(!empNos||!empNos.length)return;
+  const {error}=await supabase.from('employees').update({is_active:false}).in('emp_no',empNos.map(String));
+  if(error)console.error('Soft-delete error:',error);
+}
+
+/* ══════════════════════════════════════════════════
+   COURSE CONFIG — default, editable
+══════════════════════════════════════════════════ */
+var COURSE_CONFIG = {
+  QS: [
+    {code:'QS1', name:'Excel Level 1'},
+    {code:'QS2', name:'SAP/ERP — Lý thuyết'},
+    {code:'QS3', name:'SAP/ERP — Thực hành'},
+    {code:'QS4', name:'Quản lý HĐ nhà cung ứng'},
+    {code:'QS5', name:'Quản lý chi phí công trường'},
+  ],
+  'QS Leader': [
+    {code:'QSL1', name:'Quản lý HĐ CĐT Level 1'},
+    {code:'QSL2', name:'Báo cáo TC dự án Level 1'},
+    {code:'QSL3', name:'Kế toán TC dự án'},
+  ],
+  'D.PM': [
+    {code:'DPM1', name:'Báo cáo TC dự án Level 2'},
+    {code:'DPM2', name:'Quản lý HĐ CĐT Level 2'},
+    {code:'DPM3', name:'Evaluating & selecting subcont.'},
+    {code:'DPM4', name:'Basement/Superstructure/Finishing'},
+    {code:'DPM5', name:'Coordination Cons & MEP'},
+  ],
+};
+
+/* ══════════════════════════════════════════════════
+   CONSTANTS
+══════════════════════════════════════════════════ */
+var THRESH = {'QS':2,'QS Leader':2,'D.PM':2};
+var NEXT_POS_MGMT = {'QS':'QS Leader','QS Leader':'D.PM (Site)','D.PM':'—','D.PM (Site)':'—','D.PM (Office)':'—'};
+var NEXT_POS_EXP  = {'QS':'QS Leader','QS Leader':'D.PM (Office)','D.PM':'—','D.PM (Site)':'—','D.PM (Office)':'—'};
+var POS_ORDER = ['QS','QS Leader','D.PM (Site)','D.PM (Office)'];
+var POS_THRESH_KEY = {'QS':'QS','QS Leader':'QS Leader','D.PM':'D.PM','D.PM (Site)':'D.PM','D.PM (Office)':'D.PM'};
+
+/* ══════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════ */
+var employees = [];
+var skR='',saR=true,skL='',saL=true;
+var currentTab='retention';
+var today = new Date();
+
+/* ══════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════ */
+function edate(d,m){let r=new Date(d);r.setMonth(r.getMonth()+m);return r;}
+function fmtD(d){if(!d)return'—';return d.toLocaleDateString('vi-VN',{month:'short',year:'numeric'});}
+function fmtDFull(d){if(!d)return'—';return d.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function losYrs(d){if(!d)return null;return(today-d)/(1000*60*60*24*365);}
+function parseDate(v){if(!v)return null;if(v instanceof Date)return isNaN(v)?null:v;let d=new Date(v.toString().trim());return isNaN(d)?null:d;}
+function isDone(v){
+  if(!v&&v!==0)return false;
+  var s=String(v).toLowerCase().trim();
+  // Explicit positives
+  if(s==='done'||s==='completed'||s==='x'||s==='v'||s==='✓'||s==='yes'||s==='1'||s==='true'||s==='có'||s==='ok'||s==='finish'||s==='hoàn thành'||s==='đã học'||s==='đạt')return true;
+  // Explicit negatives
+  if(s===''||s==='0'||s==='no'||s==='not yet'||s==='chưa'||s==='chua'||s==='not done'||s==='not started'||s==='pending'||s==='n/a'||s==='chưa có'||s==='—'||s==='-')return false;
+  // Non-empty non-negative = done
+  return s.length>0;
+}
+function _stripAccent(s){
+  // Remove Vietnamese diacritics for fuzzy matching
+  var map='àáâãäåăắặấầẩẫạảạ->a,èéêëẹẻẽếềệểễ->e,ìíîïịỉĩ->i,òóôõöơớờộổỗọỏ->o,ùúûüưứừựửữụủ->u,ýỳỷỹỵ->y,đ->d,ÀÁÂÃÄÅĂẮẶẤẦẨẪẠẢ->a,ÈÉÊËẸẺẼẾỀỆỂỄ->e,ÌÍÎÏỊỈĨ->i,ÒÓÔÕÖƠỚỜỘỔỖỌỎ->o,ÙÚÛÜƯỨỪỰỬỮỤỦ->u,ÝỲỶỸỴ->y,Đ->d';
+  var r=s;
+  var pairs={'à':'a','á':'a','â':'a','ã':'a','ä':'a','å':'a','ă':'a','ắ':'a','ặ':'a','ấ':'a','ầ':'a','ẩ':'a','ẫ':'a','ạ':'a','ả':'a','è':'e','é':'e','ê':'e','ë':'e','ẹ':'e','ẻ':'e','ẽ':'e','ế':'e','ề':'e','ệ':'e','ể':'e','ễ':'e','ì':'i','í':'i','î':'i','ï':'i','ị':'i','ỉ':'i','ĩ':'i','ò':'o','ó':'o','ô':'o','õ':'o','ö':'o','ơ':'o','ớ':'o','ờ':'o','ộ':'o','ổ':'o','ỗ':'o','ọ':'o','ỏ':'o','ù':'u','ú':'u','û':'u','ü':'u','ư':'u','ứ':'u','ừ':'u','ự':'u','ử':'u','ữ':'u','ụ':'u','ủ':'u','ý':'y','ỳ':'y','ỷ':'y','ỹ':'y','ỵ':'y','đ':'d','À':'a','Á':'a','Â':'a','Ã':'a','Ä':'a','Å':'a','Ă':'a','Ắ':'a','Ặ':'a','Ấ':'a','Ầ':'a','Ẩ':'a','Ẫ':'a','Ạ':'a','Ả':'a','È':'e','É':'e','Ê':'e','Ë':'e','Ẹ':'e','Ẻ':'e','Ẽ':'e','Ế':'e','Ề':'e','Ệ':'e','Ể':'e','Ễ':'e','Ì':'i','Í':'i','Î':'i','Ï':'i','Ị':'i','Ỉ':'i','Ĩ':'i','Ò':'o','Ó':'o','Ô':'o','Õ':'o','Ö':'o','Ơ':'o','Ớ':'o','Ờ':'o','Ộ':'o','Ổ':'o','Ỗ':'o','Ọ':'o','Ỏ':'o','Ù':'u','Ú':'u','Û':'u','Ü':'u','Ư':'u','Ứ':'u','Ừ':'u','Ự':'u','Ử':'u','Ữ':'u','Ụ':'u','Ủ':'u','Ý':'y','Ỳ':'y','Ỷ':'y','Ỹ':'y','Ỵ':'y','Đ':'d'};
+  var out='';for(var i=0;i<r.length;i++){var c=r[i];out+=(pairs[c]||c);}
+  return out;
+}
+function _norm(s){return _stripAccent(String(s||'').toLowerCase()).split(' ').join('').split('/').join('').split('-').join('').split('\n').join('').split('\t').join('');}
+function colFind(hdrs,kws){
+  for(var ki=0;ki<kws.length;ki++){
+    var kw=kws[ki];
+    for(var hi=0;hi<hdrs.length;hi++){
+      var h=hdrs[hi];
+      if(!h&&h!==0)continue;
+      var n=_norm(h);
+      if(n===kw||n.indexOf(kw)>=0)return hi;
+    }
+  }
+  return -1;
+}
+
+/* Normalize pos for threshold lookup */
+function posKey(pos){return POS_THRESH_KEY[pos]||pos;}
+
+/* Chuẩn hoá key dùng để match nhân viên khi merge (fix bug: trước đây existingMap
+   chỉ index theo empNo, nên nhân viên KHÔNG có Employee No. (hoặc cột không được nhận diện)
+   sẽ luôn bị coi là "mới" ở mỗi lần import -> data cộng dồn/nhân đôi) */
+function normKey(v){
+  if(v===null||v===undefined)return '';
+  var s=String(v).trim();
+  if(s==='')return '';
+  if(/^\d+\.0+$/.test(s))s=s.replace(/\.0+$/,''); // Excel đôi khi đọc mã NV dạng số thành "1001.0"
+  return _norm(s);
+}
+
+/* ══════════════════════════════════════════════════
+   CALC
+══════════════════════════════════════════════════ */
+function calcAll(e){
+  const pk = posKey(e.pos);
+  e.los = losYrs(e.ngayBD);
+  const p5=(e.p25||'').toUpperCase(), p6=(e.p26||'').toUpperCase(), p4=(e.p24||'').toUpperCase();
+  const r2 = p5&&p6?[p5,p6]:p4&&p5?[p4,p5]:[];
+  e.perfOK = r2.length<2?'N/A':r2.every(p=>p==='HE'||p==='O')?'Yes':'No';
+  const t = THRESH[pk]||99;
+  e.qualified_seniority = e.ngayBD&&e.los>=t;
+
+  // Next position based on path
+  const isExpert = e.devPath==='Expertise Path';
+  e.nextP = isExpert ? (NEXT_POS_EXP[pk]||'—') : (NEXT_POS_MGMT[pk]||'—');
+  e.nextPDate = (e.ngayBD&&THRESH[pk]) ? edate(e.ngayBD,THRESH[pk]*12) : null;
+
+  // Retention
+  if(pk==='QS'){e.retWave='1st Retention';e.retDate=e.ngayBD?edate(e.ngayBD,24):null;}
+  else if(pk==='QS Leader'){e.retWave=e.los<1?'2nd Retention (bonding 2yr)':'3rd Retention';e.retDate=e.ngayBD?edate(e.ngayBD,e.los<1?12:24):null;}
+  else{e.retWave='Không có';e.retDate=null;}
+  if(e.retDate){const d=(e.retDate-today)/86400000;e.retSt=d<0?'overdue':d<=90?'soon':'ok';}
+  else e.retSt='na';
+
+  // Learning
+  calcLearning(e);
+
+  // Overall ready
+  if(!e.ngayBD) e.ready='Chưa có data';
+  else if(e.qualified_seniority && e.perfOK==='Yes' && e.devQ==='ok') e.ready='Yes - Ready';
+  else if(e.qualified_seniority && e.perfOK==='Yes' && e.devQ!=='ok') e.ready='Learning Pending';
+  else if(e.qualified_seniority) e.ready='Đủ năm, chờ Perf';
+  else e.ready='Not Yet';
+
+  if(!e.promoR)e.promoR='';
+  if(!e.retR)e.retR='';
+}
+
+function calcLearning(e){
+  const pk = posKey(e.pos);
+  const isExpert = e.devPath==='Expertise Path';
+
+  // Courses applicable = courses for current level AND all previous levels
+  const levelOrder = ['QS','QS Leader','D.PM'];
+  const curIdx = levelOrder.indexOf(pk);
+  let applicableCourses = [];
+  for(let i=0;i<=curIdx&&i<levelOrder.length;i++){
+    applicableCourses = applicableCourses.concat(COURSE_CONFIG[levelOrder[i]]||[]);
+  }
+
+  e.totalC = applicableCourses.length;
+  e.doneC = applicableCourses.filter(c=>e.courses[c.code]).length;
+  e.pct = e.totalC>0?Math.round((e.doneC/e.totalC)*100):0;
+  e.missingC = applicableCourses.filter(c=>!e.courses[c.code]);
+  e.doneList = applicableCourses.filter(c=>e.courses[c.code]);
+
+  // Site experience: MUST HAVE only for QS Leader on Management Path
+  e.siteAppl = pk==='QS Leader' && !isExpert;
+  e.siteOK = !e.siteAppl || e.siteStatus==='Done';
+  e.siteBlocked = e.siteAppl && e.siteStatus!=='Done';
+
+  // Learning Qualified
+  if(e.missingC.length===0 && e.siteOK) e.devQ='ok';
+  else if(e.missingC.length===0 && !e.siteOK) e.devQ='site';
+  else e.devQ='courses';
+}
+
+function devQTag(e){
+  if(e.devQ==='ok') return`<span class="tag t-green"><i class="ti ti-check"></i>Learning Qualified</span>`;
+  if(e.devQ==='site') return`<span class="tag t-amber"><i class="ti ti-map-pin"></i>Thiếu Site Exp</span>`;
+  return`<span class="tag t-red"><i class="ti ti-minus"></i>Còn ${e.missingC.length} khóa</span>`;
+}
+
+/* ══════════════════════════════════════════════════
+   UPLOAD
+══════════════════════════════════════════════════ */
+// ── Upload state ──
+var retFileLoaded=false, lrnFileLoaded=false;
+
+function scrollToUpload(){window.scrollTo({top:0,behavior:'smooth'});}
+function onDragZone(e,id,over){e.preventDefault();document.getElementById(id).classList.toggle('drag',over);}
+function onDropZone(e,type){e.preventDefault();document.getElementById(type==='retention'?'uzHRBP':'uzLOD').classList.remove('drag');var f=e.dataTransfer.files[0];if(f)processFileTyped(f,type);}
+function handleFileTyped(e,type){var f=e.target.files[0];if(f)processFileTyped(f,type);}
+
+function processFileTyped(f,type){
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});
+    var _fs=function(names){for(var i=0;i<names.length;i++){if(wb.Sheets[names[i]])return wb.Sheets[names[i]];}return null;};
+
+    if(type==='retention'){
+      // HRBP file: read retention/promotion data
+      var s1=_fs(['📥 Data','Data tổng','Data','data','Sheet1','Nhập toàn bộ ds QS'])||wb.Sheets[wb.SheetNames[0]];
+      var r1=XLSX.utils.sheet_to_json(s1,{header:1,raw:false,dateNF:'yyyy-mm-dd'});
+      // Also check for learning data in same file (all-in-one)
+      var s2=_fs(['📚 Development Tracking','Development Tracking','Learning']);
+      var r2=s2?XLSX.utils.sheet_to_json(s2,{header:1}):null;
+      // Course config
+      var s3=_fs(['⚙ Course Config','Course Config','Config','config']);
+      if(s3){var r3=XLSX.utils.sheet_to_json(s3,{header:1});parseCourseConfig(r3);}
+      var report=mergeEmployees(r1,r2,'retention');
+      retFileLoaded=true;
+      updateFileBar('ret',f.name,report);
+
+    } else {
+      // L&OD file: read learning data
+      var sl=_fs(['📚 Development Tracking','Development Tracking','Learning','Data tổng','Data','Sheet1'])||wb.Sheets[wb.SheetNames[0]];
+      var rl=XLSX.utils.sheet_to_json(sl,{header:1});
+      // Also course config
+      var sc=_fs(['⚙ Course Config','Course Config','Config']);
+      if(sc){var rc=XLSX.utils.sheet_to_json(sc,{header:1});parseCourseConfig(rc);}
+      var report=mergeEmployees(null,rl,'learning');
+      lrnFileLoaded=true;
+      updateFileBar('lrn',f.name,report);
+    }
+
+    if(employees.length>0){
+      buildHeadR();buildHeadL();buildConfigUI();
+      populateFilters();renderKPIs();
+      document.getElementById('updR').textContent=new Date().toLocaleTimeString('vi-VN');
+      renderR();renderL();
+    }
+  };
+  reader.readAsArrayBuffer(f);
+}
+
+function updateFileBar(type,fname,report){
+  var af=document.getElementById('activeFiles');
+  var existing=document.getElementById('af_'+type);
+  if(existing)existing.remove();
+  var badge=document.createElement('span');
+  badge.className='af-badge';badge.id='af_'+type;
+  var icon=type==='ret'?'ti-shield-check':'ti-book';
+  var color=type==='ret'?'#2a78d6':'#1baf7a';
+  badge.innerHTML='<i class="ti '+icon+'" style="color:'+color+'"></i>'+fname
+    +' <span class="af-x" onclick="clearFileType(\''+type+'\')" title="Xóa">×</span>';
+  af.appendChild(badge);
+
+  // Merge report
+  var mr=document.getElementById('mergeReport');
+  mr.style.display='flex';
+  mr.innerHTML='<div class="merge-report">'
+    +'<span class="mr-label"><i class="ti ti-git-merge" style="font-size:13px"></i> Kết quả import</span>'
+    +'<div class="mr-stat"><span class="mr-num mr-add">'+report.added+'</span><span class="mr-desc">Thêm mới</span></div>'
+    +'<div class="mr-stat"><span class="mr-num mr-upd">'+report.updated+'</span><span class="mr-desc">Đã cập nhật</span></div>'
+    +'<div class="mr-stat"><span class="mr-num mr-keep">'+report.kept+'</span><span class="mr-desc">Giữ nguyên</span></div>'
+    +(report.removed>0?'<div class="mr-stat"><span class="mr-num mr-rm">'+report.removed+'</span><span class="mr-desc">Đã nghỉ (ẩn)</span></div>':'')
+    +'<span style="font-size:11px;color:var(--text-muted);margin-left:auto">'+new Date().toLocaleTimeString('vi-VN')+'</span>'
+    +'</div>';
+}
+
+function clearFileType(type){
+  document.getElementById('af_'+type+'')&&document.getElementById('af_'+type).remove();
+  if(type==='ret')retFileLoaded=false;
+  else lrnFileLoaded=false;
+  if(!retFileLoaded&&!lrnFileLoaded){employees=[];renderKPIs();renderR();renderL();}
+}
+
+// ── Merge/Upsert employees ──
+// WEB-ONLY FIELDS (preserved across re-imports):
+//   promoR, retR, siteStatus, siteProjects
+// EXCEL FIELDS (overwritten on re-import):
+//   all other fields
+
+function mergeEmployees(r1, r2, importType){
+  var report={added:0,updated:0,kept:0,removed:0};
+
+  // Build lookup from existing employees
+  var existingMap={};
+  employees.forEach(function(e){
+    var k=normKey(e.empNo)||normKey(e.name);
+    if(k)existingMap[k]=e;
+  });
+
+  var newEmpNos={};
+
+  // ── Parse retention data (r1) ──
+  if(r1){
+    var h1r=-1;
+    for(var ri=0;ri<r1.length;ri++){
+      var row=r1[ri];
+      if(row&&row.some(function(c){return c&&(_norm(String(c)).indexOf('employee')>=0||_norm(String(c))==='stt');})){h1r=ri;break;}
+    }
+    if(h1r<0)h1r=4;
+    var h1=r1[h1r]||[];
+    var ci={
+      emp:    colFind(h1,['employeeno','employee','msnv','empno']),
+      name:   colFind(h1,['hovaten','hoten','name','ten']),
+      bu:     colFind(h1,['bu']),
+      phong:  colFind(h1,['phongban','phong','department']),
+      ngayVao:colFind(h1,['ngayvao','vaoctd','ngaybatdauvao']),
+      pos:    colFind(h1,['chucdanh','currentposition','position']),
+      path:   colFind(h1,['path','devpath','developmentpath']),
+      ngayBD: colFind(h1,['ngaybatdauchucdanh','ngaybatdauvitri','ngaybatdau','datestarted']),
+      p24:    colFind(h1,['fy24','performance2024','perf2024','2024','kpi2024']),
+      p25:    colFind(h1,['fy25','performance2025','perf2025','2025','kpi2025']),
+      p26:    colFind(h1,['fy26','performance2026','perf2026','2026','kpi2026']),
+      retDone:colFind(h1,['danhan','nhanretention','retentionbonus','retention','wave','nhanbonus']),
+      promoR: colFind(h1,['promotionstatus','promo']),
+      retR:   colFind(h1,['realityretention','realityret']),
+    };
+    if(ci.retDone<0&&ci.p26>=0){
+      var _nc=ci.p26+1;
+      if(_nc<h1.length&&(_norm(h1[_nc]||'')==='')){ ci.retDone=_nc; }
+    }
+
+    for(var i=h1r+1;i<r1.length;i++){
+      var r=r1[i];
+      var nameVal=ci.name>=0?r[ci.name]:null;
+      if(!nameVal||String(nameVal).trim()==='')continue;
+      var empNo=ci.emp>=0?String(r[ci.emp]||'').trim():'';
+      var key=normKey(empNo)||normKey(nameVal);
+      newEmpNos[key]=true;
+
+      // Fields from Excel (always overwrite)
+      var excelFields={
+        stt:i-h1r, empNo:empNo,
+        name:String(nameVal).trim(),
+        bu:ci.bu>=0?String(r[ci.bu]||'').trim():'',
+        phong:ci.phong>=0?String(r[ci.phong]||'').trim():'',
+        ngayVao:parseDate(ci.ngayVao>=0?r[ci.ngayVao]:null),
+        pos:ci.pos>=0?String(r[ci.pos]||'').trim():'',
+        ngayBD:parseDate(ci.ngayBD>=0?r[ci.ngayBD]:null),
+        p24:ci.p24>=0?String(r[ci.p24]||'').trim():'',
+        p25:ci.p25>=0?String(r[ci.p25]||'').trim():'',
+        p26:ci.p26>=0?String(r[ci.p26]||'').trim():'',
+        retDone:ci.retDone>=0?String(r[ci.retDone]||'').trim():'',
+      };
+
+      // Normalize devPath
+      excelFields.devPath=(function(){
+        var raw=ci.path>=0?String(r[ci.path]||'').trim():'';
+        if(!raw)return'';
+        var lo=raw.toLowerCase();
+        if(lo.indexOf('management')>=0||lo==='mgmt'||lo==='m')return'Management Path';
+        if(lo.indexOf('expertise')>=0||lo.indexOf('expert')>=0||lo==='e')return'Expertise Path';
+        return raw;
+      })();
+
+      if(existingMap[key]){
+        // UPDATE: overwrite excel fields, keep web-only fields
+        var existing=existingMap[key];
+        Object.keys(excelFields).forEach(function(k){existing[k]=excelFields[k];});
+        // Only overwrite promoR/retR if Excel has explicit value
+        if(ci.promoR>=0&&r[ci.promoR])existing.promoR=String(r[ci.promoR]||'').trim();
+        if(ci.retR>=0&&r[ci.retR])existing.retR=String(r[ci.retR]||'').trim();
+        calcAll(existing);
+        report.updated++;
+      } else {
+        // INSERT: new employee
+        var e=Object.assign({},excelFields,{
+          promoR:ci.promoR>=0?String(r[ci.promoR]||'').trim():'',
+          retR:ci.retR>=0?String(r[ci.retR]||'').trim():'',
+          siteStatus:'Not Started', siteProjects:[], courses:{},
+        });
+        var allCodes=['SITE',...Object.values(COURSE_CONFIG).flat().map(function(c){return c.code;})];
+        allCodes.forEach(function(code){e.courses[code]=false;});
+        calcAll(e);
+        employees.push(e);
+        existingMap[key]=e;
+        report.added++;
+      }
+    }
+  }
+
+  // ── Parse learning data (r2) ──
+  if(r2){
+    var h2r=-1;
+    for(var ri2=0;ri2<r2.length;ri2++){
+      var row2=r2[ri2];
+      if(!row2)continue;
+      for(var ci2=0;ci2<row2.length;ci2++){
+        var cv=_norm(row2[ci2]||'');
+        var cvu=String(row2[ci2]||'').toUpperCase().replace(/ /g,'');
+        if(cv.indexOf('employee')>=0||cv==='stt'||cv==='msnv'||cvu==='QS1'||cvu==='QSL1'||cvu==='SITE'){h2r=ri2;break;}
+      }
+      if(h2r>=0)break;
+    }
+    if(h2r<0)h2r=3;
+    var h2=r2[h2r]||[];
+    var allCodes2=['SITE',...Object.values(COURSE_CONFIG).flat().map(function(c){return c.code;})];
+    var codeColMap={};
+    h2.forEach(function(h,colIdx){
+      if(!h&&h!==0)return;
+      var hs=String(h).toUpperCase().split(' ').join('').split('\t').join('').split('\n').join('').trim();
+      allCodes2.forEach(function(code){
+        var nc=code.toUpperCase().replace(/ /g,'');
+        if(hs===nc)codeColMap[code]=colIdx;
+      });
+    });
+    if(codeColMap['SITE']===undefined){
+      var siteCol=colFind(h2,['siteexp','site','kiemnhiem']);
+      if(siteCol>=0)codeColMap['SITE']=siteCol;
+    }
+    var empCol=colFind(h2,['employeeno','employee','msnv','empno']);
+    var nameCol=colFind(h2,['hovaten','hoten','name','ten']);
+
+    for(var i2=h2r+1;i2<r2.length;i2++){
+      var r2row=r2[i2];
+      var empKey=empCol>=0?String(r2row[empCol]||'').trim():'';
+      var nameKey=nameCol>=0?String(r2row[nameCol]||'').trim():'';
+      var key2=normKey(empKey)||normKey(nameKey);
+      if(!key2)continue;
+
+      var target=existingMap[key2];
+      if(!target){
+        // Learning-only row: skip (no retention data to anchor it)
+        continue;
+      }
+      // Overwrite course completion from Excel
+      allCodes2.forEach(function(code){
+        if(codeColMap[code]!==undefined){
+          var val=r2row[codeColMap[code]];
+          target.courses[code]=isDone(val);
+        }
+      });
+      // site experience: only overwrite if NOT already set via web
+      // Rule: if siteStatus was set on web (not 'Not Started'), keep it
+      //       if it's still default 'Not Started', let Excel override
+      if(codeColMap['SITE']!==undefined){
+        var siteVal=r2row[codeColMap['SITE']];
+        var normalized=_norm(siteVal||'');
+        if(target.siteStatus==='Not Started'||importType==='learning'){
+          if(normalized==='done'||normalized==='x'||normalized==='v')target.siteStatus='Done';
+          else if(normalized.indexOf('progress')>=0||normalized.indexOf('dang')>=0)target.siteStatus='Progressing';
+          else if(normalized==='notyetyet'||normalized===''||normalized==='notyet')target.siteStatus='Not Started';
+        }
+      }
+      calcAll(target);
+      if(!newEmpNos[key2])report.kept++;
+    }
+  }
+
+  // Count employees not in new import (kept from previous sessions)
+  if(r1){
+    employees.forEach(function(e){
+      var key=normKey(e.empNo)||normKey(e.name);
+      if(!newEmpNos[key])report.kept++;
+    });
+  }
+
+  // Đẩy toàn bộ employees lên Supabase (upsert, chạy nền, không chặn UI)
+  pushToSupabase(employees);
+
+  return report;
+}
+
+function parseCourseConfig(rows){
+  // Format: Level | Code | Name (skip header)
+  let hdr=rows.findIndex(r=>r&&r.some(c=>c&&/level|code|name/i.test(String(c))));
+  if(hdr<0)hdr=0;
+  const newCfg={QS:[],_QSL:[],_DPM:[]};
+  for(let i=hdr+1;i<rows.length;i++){
+    const r=rows[i];
+    if(!r||!r[0])continue;
+    const lvl=String(r[0]||'').trim();
+    const code=String(r[1]||'').trim();
+    const name=String(r[2]||'').trim();
+    if(!code||!name)continue;
+    if(lvl==='QS')newCfg.QS.push({code,name});
+    else if(lvl==='QS Leader')newCfg['QS Leader']=(newCfg['QS Leader']||[]).concat({code,name});
+    else if(lvl==='D.PM')newCfg['D.PM']=(newCfg['D.PM']||[]).concat({code,name});
+  }
+  if(newCfg.QS.length)COURSE_CONFIG.QS=newCfg.QS;
+  if(newCfg['QS Leader']&&newCfg['QS Leader'].length)COURSE_CONFIG['QS Leader']=newCfg['QS Leader'];
+  if(newCfg['D.PM']&&newCfg['D.PM'].length)COURSE_CONFIG['D.PM']=newCfg['D.PM'];
+}
+
+function buildEmployees(r1,r2){
+  let h1r=r1.findIndex(r=>r&&r.some(c=>c&&/employee|stt/i.test(String(c))));
+  if(h1r<0)h1r=4;
+  const h1=r1[h1r]||[];
+  const ci={
+    emp:    colFind(h1,['employeeno','employee','msnv','empno']),
+    name:   colFind(h1,['hovaten','hoten','name','ten']),
+    bu:     colFind(h1,['bu']),
+    phong:  colFind(h1,['phongban','phong','department']),
+    ngayVao:colFind(h1,['ngayvao','vaoctd','ngaybatdauvao','ngaybatdauvaoCtD']),
+    pos:    colFind(h1,['chucdanh','chucDanh','currentposition','position','chucvuHienTai']),
+    path:   colFind(h1,['path','devpath','developmentpath','lostrinhthaydoi']),
+    ngayBD: colFind(h1,['ngaybatdauchucdanh','ngaybatdauvitri','ngaybatdau','datestarted','ngaybatdauchucvu']),
+    p24:    colFind(h1,['fy24','performance2024','perf2024','2024','kpi2024']),
+    p25:    colFind(h1,['fy25','performance2025','perf2025','2025','kpi2025']),
+    p26:    colFind(h1,['fy26','performance2026','perf2026','2026','kpi2026']),
+    retDone:colFind(h1,['danhan','nhanretention','retentionbonus','retention','wave','nhanbonus','retentionwave']),
+    promoR: colFind(h1,['promotionstatus','promo','trangThaipromote']),
+    retR:   colFind(h1,['realityretention','realityret','thucteretention']),
+  };
+  // Fallback: if retDone not found, check col right after p26 (common in all-in-one)
+  if(ci.retDone<0&&ci.p26>=0){
+    var _nc=ci.p26+1;
+    if(_nc<h1.length){
+      var _nh=_norm(h1[_nc]||'');
+      if(_nh===''||_nh.indexOf('wave')>=0||_nh.indexOf('ret')>=0){ci.retDone=_nc;}
+    }
+  }
+  if(ci.retDone<0&&ci.p26>=0){
+    var _nextCol=ci.p26+1;
+    if(_nextCol<h1.length){
+      var _nh=String(h1[_nextCol]||'').toLowerCase().trim();
+      if(_nh===''||_nh.indexOf('wave')>=0||_nh.indexOf('ret')>=0||_nh.indexOf('wave')>=0){ci.retDone=_nextCol;}
+    }
+  }
+
+  // Build course map from dev sheet
+  let courseMap={};
+  if(r2){
+    // Find header row containing 'employee'/'stt' OR a course code like QS1/QSL1/DPM1
+    var h2r=-1;
+    for(var ri=0;ri<r2.length;ri++){
+      var row=r2[ri];
+      if(!row)continue;
+      var found=false;
+      for(var ci2=0;ci2<row.length;ci2++){
+        var cv=_norm(row[ci2]||'');
+        if(cv.indexOf('employee')>=0||cv==='stt'||cv==='msnv'){found=true;break;}
+        var cvu=String(row[ci2]||'').toUpperCase().replace(/ /g,'');
+        if(cvu==='QS1'||cvu==='QSL1'||cvu==='DPM1'||cvu==='SITE'){found=true;break;}
+      }
+      if(found){h2r=ri;break;}
+    }
+    if(h2r<0)h2r=3;
+    const h2=r2[h2r]||[];
+    const allCodes=['SITE',...Object.values(COURSE_CONFIG).flat().map(c=>c.code)];
+    const codeColMap={};
+    // Match columns by normalizing header string (remove spaces, compare uppercase)
+    h2.forEach(function(h,colIdx){
+      if(!h&&h!==0)return;
+      var hs=String(h).toUpperCase().split(' ').join('').split('\t').join('').split('\n').join('').trim();
+      allCodes.forEach(function(code){
+        var nc=code.toUpperCase().replace(/ /g,'');
+        if(hs===nc)codeColMap[code]=colIdx;
+      });
+    });
+    // Fallback for site exp with Vietnamese header
+    if(codeColMap['SITE']===undefined){
+      var siteCol=colFind(h2,['siteexp','site','kiemnhiem','kiemnhi']);
+      if(siteCol>=0)codeColMap['SITE']=siteCol;
+    }
+    const empCol=colFind(h2,['employeeno','employee','msnv','empno']);
+    const nameCol=colFind(h2,['hovaten','name','ten']);
+    for(let i=h2r+1;i<r2.length;i++){
+      const r=r2[i];
+      const key=empCol>=0?String(r[empCol]||'').trim():nameCol>=0?String(r[nameCol]||'').trim():'';
+      if(!key)continue;
+      const courses={};
+      allCodes.forEach(code=>{
+        if(codeColMap[code]!==undefined)courses[code]=isDone(r[codeColMap[code]]);
+        else courses[code]=false;
+      });
+      courseMap[key]=courses;
+    }
+  }
+
+  employees=[];
+  for(let i=h1r+1;i<r1.length;i++){
+    const r=r1[i];
+    const nameVal=ci.name>=0?r[ci.name]:null;
+    if(!nameVal||String(nameVal).trim()==='')continue;
+    const empNo=ci.emp>=0?String(r[ci.emp]||'').trim():'';
+    const nameStr=String(nameVal).trim();
+    const e={
+      stt:i-h1r,empNo,name:nameStr,
+      bu:ci.bu>=0?String(r[ci.bu]||'').trim():'',
+      phong:ci.phong>=0?String(r[ci.phong]||'').trim():'',
+      ngayVao:parseDate(ci.ngayVao>=0?r[ci.ngayVao]:null),
+      pos:ci.pos>=0?String(r[ci.pos]||'').trim():'',
+      devPath:(function(){
+        var raw=ci.path>=0?String(r[ci.path]||'').trim():'';
+        if(!raw)return '';
+        var lo=raw.toLowerCase();
+        if(lo.indexOf('management')>=0||lo==='mgmt'||lo==='m')return 'Management Path';
+        if(lo.indexOf('expertise')>=0||lo.indexOf('expert')>=0||lo==='e')return 'Expertise Path';
+        return raw;
+      })(),
+      ngayBD:parseDate(ci.ngayBD>=0?r[ci.ngayBD]:null),
+      p24:ci.p24>=0?String(r[ci.p24]||'').trim():'',
+      p25:ci.p25>=0?String(r[ci.p25]||'').trim():'',
+      p26:ci.p26>=0?String(r[ci.p26]||'').trim():'',
+      retDone:ci.retDone>=0?String(r[ci.retDone]||'').trim():'',
+      promoR:ci.promoR>=0?String(r[ci.promoR]||'').trim():'',
+      retR:ci.retR>=0?String(r[ci.retR]||'').trim():'',
+      siteStatus:'Not Started',
+      siteProjects:[],
+      courses:courseMap[empNo]||courseMap[nameStr]||{},
+    };
+    // Fill missing course keys
+    ['SITE',...Object.values(COURSE_CONFIG).flat().map(c=>c.code)].forEach(code=>{
+      if(!(code in e.courses))e.courses[code]=false;
+    });
+    calcAll(e);
+    employees.push(e);
+  }
+}
+
+function clearData(){
+  employees=[];retFileLoaded=false;lrnFileLoaded=false;
+  ['fileRet','fileLrn'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('activeFiles').innerHTML='';
+  document.getElementById('mergeReport').style.display='none';
+  renderKPIs();renderR();renderL();
+}
+
+/* ══════════════════════════════════════════════════
+   DEMO DATA
+══════════════════════════════════════════════════ */
+function loadDemo(){
+  function ago(y,m,d){return new Date(y,m-1,d);}
+  const raw=[
+    {n:'Nguyễn Minh Tuấn', bu:'BU1',pos:'QS',        path:'Management Path',ngayVao:ago(2022,5,1),ngayBD:ago(2023,1,1),p24:'HE',p25:'O', p26:'HE',retDone:'Chưa nhận',
+     c:{SITE:false,QS1:true,QS2:true,QS3:true,QS4:false,QS5:false}},
+    {n:'Trần Thị Lan',     bu:'BU2',pos:'QS',        path:'Expertise Path', ngayVao:ago(2023,11,1),ngayBD:ago(2024,1,1),p24:'E', p25:'HE',p26:'HE',retDone:'Chưa nhận',
+     c:{QS1:true,QS2:true,QS3:false,QS4:false,QS5:false}},
+    {n:'Lê Văn Hùng',      bu:'BU1',pos:'QS Leader', path:'Management Path',ngayVao:ago(2021,3,1),ngayBD:ago(2025,3,1),p24:'O', p25:'O', p26:'HE',retDone:'1st Wave',
+     c:{SITE:false,QS1:true,QS2:true,QS3:true,QS4:true,QS5:true,QSL1:true,QSL2:false,QSL3:false}},
+    {n:'Phạm Quỳnh Anh',   bu:'BU3',pos:'QS Leader', path:'Management Path',ngayVao:ago(2020,8,1),ngayBD:ago(2023,6,1),p24:'HE',p25:'HE',p26:'O', retDone:'1st Wave',
+     c:{SITE:true,QS1:true,QS2:true,QS3:true,QS4:true,QS5:true,QSL1:true,QSL2:true,QSL3:true}},
+    {n:'Hoàng Đức Thịnh',  bu:'BU2',pos:'QS Leader', path:'Expertise Path', ngayVao:ago(2021,6,1),ngayBD:ago(2023,9,1),p24:'E', p25:'HE',p26:'HE',retDone:'1st Wave',
+     c:{SITE:false,QS1:true,QS2:true,QS3:true,QS4:true,QS5:true,QSL1:true,QSL2:true,QSL3:true}},
+    {n:'Vũ Thị Mai',       bu:'BU4',pos:'D.PM (Site)',path:'Management Path',ngayVao:ago(2019,4,1),ngayBD:ago(2024,10,1),p24:'O',p25:'HE',p26:'O', retDone:'2nd Wave',
+     c:{SITE:true,QS1:true,QS2:true,QS3:true,QS4:true,QS5:true,QSL1:true,QSL2:true,QSL3:true,DPM1:true,DPM2:false,DPM3:false,DPM4:false,DPM5:false}},
+    {n:'Đặng Trọng Khoa',  bu:'BU1',pos:'D.PM (Site)',path:'Management Path',ngayVao:ago(2018,2,1),ngayBD:ago(2022,7,1),p24:'O',p25:'O', p26:'O', retDone:'2nd Wave',
+     c:{SITE:true,QS1:true,QS2:true,QS3:true,QS4:true,QS5:true,QSL1:true,QSL2:true,QSL3:true,DPM1:true,DPM2:true,DPM3:true,DPM4:true,DPM5:true}},
+    {n:'Bùi Thanh Tâm',    bu:'BU5',pos:'QS',        path:'Management Path',ngayVao:ago(2025,10,1),ngayBD:ago(2025,10,1),p24:'',p25:'',p26:'E',retDone:'Chưa nhận',
+     c:{}},
+    {n:'Ngô Thị Hương',    bu:'BU3',pos:'QS',        path:'Expertise Path', ngayVao:ago(2022,12,1),ngayBD:ago(2022,12,1),p24:'E',p25:'HE',p26:'E',retDone:'Chưa nhận',
+     c:{QS1:true}},
+    {n:'Phan Minh Quân',   bu:'BU2',pos:'QS Leader', path:'Expertise Path', ngayVao:ago(2020,1,1),ngayBD:ago(2022,5,1),p24:'HE',p25:'O', p26:'O', retDone:'2nd Wave',
+     c:{QS1:true,QS2:true,QS3:true,QS4:true,QS5:true,QSL1:true,QSL2:true,QSL3:true}},
+  ];
+  employees=raw.map((d,i)=>{
+    const allCodes=['SITE',...Object.values(COURSE_CONFIG).flat().map(c=>c.code)];
+    const courses={};
+    allCodes.forEach(code=>{courses[code]=d.c[code]||false;});
+    const siteStatusMap={'Not Started':'Not Started','Progressing':'Progressing','Done':'Done'};
+    const demoProjData=[
+      [],[], // QS rows
+      [{name:'Vinhomes Grand Park - Tower A',start:'2024-03-01',end:'2024-09-30'},{name:'Eaton Park',start:'2024-10-01',end:''}], // Lê Văn Hùng - progressing
+      [{name:'The Opera Residence',start:'2023-06-01',end:'2024-06-30'},{name:'Metropolis Hanoi',start:'2024-07-01',end:'2025-01-31'}], // Phạm Quỳnh Anh - done
+      [], // Hoàng Đức Thịnh - expertise
+      [], // Vũ Thị Mai - D.PM
+      [], // Đặng Trọng Khoa - D.PM
+      [],[],[],
+    ];
+    const demoSiteStatus=['Not Started','Not Started','Progressing','Done','Not Started','Not Started','Not Started','Not Started','Not Started','Not Started'];
+    const e={stt:i+1,empNo:1001+i,name:d.n,bu:d.bu,pos:d.pos,devPath:d.path,phong:'Phòng QS',ngayVao:d.ngayVao,ngayBD:d.ngayBD,p24:d.p24,p25:d.p25,p26:d.p26,retDone:d.retDone,promoR:'',retR:'',siteStatus:demoSiteStatus[i]||'Not Started',siteProjects:demoProjData[i]||[],courses};
+    calcAll(e);return e;
+  });
+  document.getElementById('activeFiles').innerHTML='<span class="af-badge"><i class="ti ti-player-play" style="color:var(--teal)"></i>Demo đang chạy</span>';
+  document.getElementById('mergeReport').style.display='none';
+  showDashboard();
+}
+
+/* ══════════════════════════════════════════════════
+   SHOW DASHBOARD
+══════════════════════════════════════════════════ */
+function showDashboard(){
+  buildHeadR();buildHeadL();
+  populateFilters();renderKPIs();
+  document.getElementById('updR').textContent=new Date().toLocaleTimeString('vi-VN');
+  buildConfigUI();
+  renderR();renderL();
+}
+
+function populateFilters(){
+  ['R','L'].forEach(t=>{
+    const ps=[...new Set(employees.map(e=>e.pos).filter(Boolean))];
+    const bs=[...new Set(employees.map(e=>e.bu).filter(Boolean))];
+    let fp=document.getElementById('fPos'+t);fp.innerHTML='<option value="">Tất cả chức danh</option>';
+    ps.forEach(p=>{let o=document.createElement('option');o.value=p;o.textContent=p;fp.appendChild(o);});
+    let fb=document.getElementById('fBU'+t);fb.innerHTML='<option value="">Tất cả BU</option>';
+    bs.forEach(b=>{let o=document.createElement('option');o.value=b;o.textContent=b;fb.appendChild(o);});
+  });
+}
+
+function renderKPIs(){
+  const tot=employees.length;
+  const ready=employees.filter(e=>e.ready==='Yes - Ready').length;
+  const wait=employees.filter(e=>e.ready==='Đủ năm, chờ Perf').length;
+  const devPend=employees.filter(e=>e.ready==='Learning Pending').length;
+  const od=employees.filter(e=>e.retSt==='overdue').length;
+  const prom=employees.filter(e=>e.promoR==='Promoted').length;
+  const proc=employees.filter(e=>e.promoR==='On process of promoting').length;
+  const wlist=employees.filter(e=>e.promoR==='On waiting list').length;
+  document.getElementById('kpiR').innerHTML=`
+    <div class="kpi"><div class="kpi-l">Tổng QS</div><div class="kpi-v kv-blue">${tot}</div></div>
+    <div class="kpi"><div class="kpi-l">Yes - Ready</div><div class="kpi-v kv-green">${ready}</div><div class="kpi-sub">Đủ cả 3 điều kiện</div></div>
+    <div class="kpi"><div class="kpi-l">Learning Pending</div><div class="kpi-v kv-amber">${devPend}</div><div class="kpi-sub">Đủ năm+perf, thiếu Dev</div></div>
+    <div class="kpi"><div class="kpi-l">Chờ performance</div><div class="kpi-v kv-amber">${wait}</div></div>
+    <div class="kpi"><div class="kpi-l">Retention quá hạn</div><div class="kpi-v kv-red">${od}</div></div>
+    <div class="kpi"><div class="kpi-l">Promoted</div><div class="kpi-v kv-green">${prom}</div></div>
+    <div class="kpi"><div class="kpi-l">On process</div><div class="kpi-v kv-purple">${proc}</div></div>
+    <div class="kpi"><div class="kpi-l">Waiting list</div><div class="kpi-v kv-amber">${wlist}</div></div>
+  `;
+  const siteN=employees.filter(e=>e.siteBlocked).length;  // siteBlocked = siteAppl && siteStatus!=='Done'
+  const avgPct=tot>0?Math.round(employees.reduce((s,e)=>s+e.pct,0)/tot):0;
+  const full=employees.filter(e=>e.pct===100&&e.siteOK).length;
+  const started=employees.filter(e=>e.pct>0&&e.pct<100).length;
+  document.getElementById('kpiL').innerHTML=`
+    <div class="kpi"><div class="kpi-l">Tổng học viên</div><div class="kpi-v kv-blue">${tot}</div></div>
+    <div class="kpi"><div class="kpi-l">Avg. hoàn thành</div><div class="kpi-v kv-blue">${avgPct}%</div></div>
+    <div class="kpi"><div class="kpi-l">Learning Qualified</div><div class="kpi-v kv-green">${employees.filter(e=>e.devQ==='ok').length}</div><div class="kpi-sub">Đủ khóa + site exp</div></div>
+    <div class="kpi"><div class="kpi-l">Đang học</div><div class="kpi-v kv-amber">${started}</div></div>
+    <div class="kpi"><div class="kpi-l">Site Exp blocked</div><div class="kpi-v kv-red">${siteN}</div><div class="kpi-sub">Mgmt Path, chưa có</div></div>
+    <div class="kpi"><div class="kpi-l">Chưa bắt đầu</div><div class="kpi-v kv-red">${employees.filter(e=>e.pct===0).length}</div></div>
+  `;
+  // Alerts
+  const siteNames=employees.filter(e=>e.siteBlocked).map(e=>e.name).join(', ');
+  var _al = function(icon,msg,names){
+    if(!siteN)return '';
+    return '<div class="alert alert-red"><i class="ti ti-'+icon+'" style="flex-shrink:0"></i>'
+      +'<div style="flex:1"><strong>'+siteN+' '+msg+'</strong>'
+      +' <button onclick="toggleAN(this)" style="margin-left:8px;font-size:11px;color:#8b1a1a;background:none;border:none;cursor:pointer;text-decoration:underline">Xem danh sách ▼</button>'
+      +'<div class="an-list" style="display:none;margin-top:5px;font-size:11px;line-height:1.7;color:#5c0f0f">'+names+'</div>'
+      +'</div></div>';
+  };
+  document.getElementById('alertR').innerHTML=_al('lock','QS Leader (Management Path) bị block promote do chưa có Site Experience.',siteNames);
+  document.getElementById('alertL').innerHTML=_al('alert-triangle','QS Leader (Management Path) chưa hoàn thành Site Experience (MUST HAVE).',siteNames);
+  document.getElementById('tb1').textContent=tot;document.getElementById('tb2').textContent=tot;
+  const sbEl=document.getElementById('tbSite');
+  if(siteN>0){sbEl.style.display='inline-flex';sbEl.textContent=siteN+' blocked';}else sbEl.style.display='none';
+}
+
+/* ══════════════════════════════════════════════════
+   TAB 1: RETENTION
+══════════════════════════════════════════════════ */
+function buildHeadR(){
+  var cbTh=selectMode?'<th class="th-cb"><input type="checkbox" class="row-cb" style="width:15px;height:15px;accent-color:var(--red)" onchange="toggleSelectAll(this)" title="Chon tat ca"></th>':'';
+  document.getElementById('headR').innerHTML='<tr>'
+    +cbTh
+    +'<th class="stk" style="min-width:130px" onclick="sortR(\'name\')">Nhân viên</th>'
+    +'<th>BU</th><th>Chức danh</th><th>Path</th>'
+    +'<th onclick="sortR(\'los\')">Thâm niên tại<br>vị trí hiện tại</th>'
+    +'<th onclick="sortR(\'p24\')">Perf<br>FY24</th>'
+    +'<th onclick="sortR(\'p25\')">Perf<br>FY25</th>'
+    +'<th onclick="sortR(\'p26\')">Perf<br>FY26</th>'
+    +'<th onclick="sortR(\'perfOK\')">Qualified<br>Perf?</th>'
+    +'<th onclick="sortR(\'qualified_seniority\')">Qualified<br>Thâm niên?</th>'
+    +'<th onclick="sortR(\'devQ\')">Learning<br>Qualified?</th>'
+    +'<th onclick="sortR(\'ready\')">Promote<br>Readiness</th>'
+    +'<th onclick="sortR(\'retDone\')">Received Retention?</th>'
+    +'<th onclick="sortR(\'retWave\')">Next Retention (Plan)</th>'
+    +'<th>Next Position (Plan)</th>'
+    +'<th onclick="sortR(\'nextPDate\')">Dự kiến Promote</th>'
+    +'<th class="div-col">Reality Retention</th>'
+    +'<th>Reality Promotion</th>'
+    +'</tr>';
+}
+
+function filteredR(){
+  const q=(document.getElementById('srchR').value||'').toLowerCase();
+  const fp=document.getElementById('fPosR').value;
+  const fb=document.getElementById('fBUR').value;
+  const fpa=document.getElementById('fPathR').value;
+  const fr=document.getElementById('fReadyR').value;
+  return employees.filter(e=>{
+    if(q&&!e.name.toLowerCase().includes(q)&&!String(e.empNo).includes(q))return false;
+    if(fp&&e.pos!==fp)return false;
+    if(fb&&e.bu!==fb)return false;
+    if(fpa&&e.devPath!==fpa)return false;
+    if(fr&&e.ready!==fr)return false;
+    return true;
+  }).sort((a,b)=>{
+    if(!skR)return 0;
+    let av=a[skR],bv=b[skR];
+    if(av instanceof Date&&bv instanceof Date)return saR?av-bv:bv-av;
+    if(typeof av==='number'&&typeof bv==='number')return saR?av-bv:bv-av;
+    return saR?String(av||'').localeCompare(String(bv||''),'vi'):String(bv||'').localeCompare(String(av||''),'vi');
+  });
+}
+
+function sortR(k){saR=skR===k?!saR:true;skR=k;renderR();}
+
+function readyTag(v,e){
+  if(v==='Yes - Ready')return`<span class="tag t-green"><i class="ti ti-check"></i>Yes - Ready</span>`;
+  if(v==='Learning Pending')return`<span class="tag t-purple"><i class="ti ti-book"></i>Learning Pending</span>`;
+  if(v==='Đủ năm, chờ Perf')return`<span class="tag t-amber"><i class="ti ti-clock"></i>Đủ năm, chờ Perf</span>`;
+  if(v==='Not Yet')return`<span class="tag t-gray">Not Yet</span>`;
+  return`<span class="tag t-gray">${v}</span>`;
+}
+function waveTag(w){
+  if(!w||w==='Không có')return'<span style="color:var(--text-muted)">—</span>';
+  if(w.includes('1st'))return`<span class="tag t-green">${w}</span>`;
+  if(w.includes('2nd'))return`<span class="tag t-blue">${w}</span>`;
+  if(w.includes('3rd'))return`<span class="tag t-purple">${w}</span>`;
+  return`<span class="tag t-gray">${w}</span>`;
+}
+function retDCell(e){
+  if(!e.retDate)return'<span style="color:var(--text-muted)">—</span>';
+  const s=fmtD(e.retDate);
+  if(e.retSt==='overdue')return`<span class="tag t-red"><i class="ti ti-alert-triangle"></i>${s} quá hạn</span>`;
+  if(e.retSt==='soon')return`<span class="tag t-amber"><i class="ti ti-clock"></i>${s}</span>`;
+  return`<span style="color:var(--text-secondary);font-size:11px">${s}</span>`;
+}
+function losCell(e){
+  const pk=posKey(e.pos);const t=THRESH[pk]||2;
+  const pct=e.los!==null?Math.min(100,Math.round((e.los/t)*100)):0;
+  const col=pct>=100?'var(--green)':'var(--accent)';
+  return`<div class="los-w"><span style="font-size:11px;color:var(--text-secondary)">${e.los!==null?e.los.toFixed(1)+'y':'—'}</span><div class="los-bg"><div class="los-fill" style="width:${pct}%;background:${col}"></div></div></div>`;
+}
+function perfCell(v){if(!v)return'<span style="color:var(--text-muted)">—</span>';if(v==='O'||v==='HE')return`<span style="color:var(--green);font-weight:500">${v}</span>`;return`<span style="color:var(--amber);font-weight:500">${v}</span>`;}
+function pathTag(v){
+  if(v==='Management Path')return`<span class="tag t-mgmt"><i class="ti ti-briefcase"></i>Mgmt</span>`;
+  if(v==='Expertise Path')return`<span class="tag t-expert"><i class="ti ti-star"></i>Expert</span>`;
+  return`<span class="tag t-gray">—</span>`;
+}
+function pathSelectInline(i){
+  const v=employees[i].devPath||'';
+  const cls=v==='Management Path'?'pm':v==='Expertise Path'?'pe':'';
+  return`<select class="path-sel ${cls}" onchange="setPath(${i},this)">
+    <option value="" ${!v?'selected':''}>— chọn —</option>
+    <option value="Management Path" ${v==='Management Path'?'selected':''}>Mgmt Path</option>
+    <option value="Expertise Path" ${v==='Expertise Path'?'selected':''}>Expertise Path</option>
+  </select>`;
+}
+function setPath(i,sel){
+  employees[i].devPath=sel.value;
+  const cls=sel.value==='Management Path'?'pm':sel.value==='Expertise Path'?'pe':'';
+  sel.className='path-sel '+cls;
+  calcAll(employees[i]);
+  renderKPIs();renderR();renderL();
+}
+function retRSel(i){const v=employees[i].retR||'';const cls=v==='Paid'?'sd':v==='Waiting'?'sw2':'';return`<select class="rsel ${cls}" onchange="setRetR(${i},this)" onclick="event.stopPropagation()"><option value="" ${!v?'selected':''}>— chọn —</option><option value="Paid" ${v==='Paid'?'selected':''}>Paid</option><option value="Waiting" ${v==='Waiting'?'selected':''}>Waiting</option></select>`;}
+function promoRSel(i){const v=employees[i].promoR||'';const cls=v==='Promoted'?'sp':v==='On process of promoting'?'so':v==='On waiting list'?'sw':'';return`<select class="rsel ${cls}" onchange="setPromoR(${i},this)" onclick="event.stopPropagation()"><option value="" ${!v?'selected':''}>— chọn —</option><option value="Promoted" ${v==='Promoted'?'selected':''}>Promoted</option><option value="On process of promoting" ${v==='On process of promoting'?'selected':''}>On process</option><option value="On waiting list" ${v==='On waiting list'?'selected':''}>On waiting list</option></select>`;}
+function setRetR(i,sel){employees[i].retR=sel.value;const cls=sel.value==='Paid'?'sd':sel.value==='Waiting'?'sw2':'';sel.className='rsel '+cls;renderKPIs();updateEmployeeField(employees[i].empNo,{ret_r:sel.value});}
+function setPromoR(i,sel){employees[i].promoR=sel.value;const cls=sel.value==='Promoted'?'sp':sel.value==='On process of promoting'?'so':sel.value==='On waiting list'?'sw':'';sel.className='rsel '+cls;renderKPIs();updateEmployeeField(employees[i].empNo,{promo_r:sel.value});}
+
+function renderR(){
+  const rows=filteredR();
+  document.getElementById('cShR').textContent=rows.length;document.getElementById('cToR').textContent=employees.length;
+  if(!rows.length){document.getElementById('tbodyR').innerHTML='<tr><td colspan="16" style="text-align:center;padding:2rem;color:var(--text-muted)">Không có kết quả</td></tr>';return;}
+  document.getElementById('tbodyR').innerHTML=rows.map(e=>`
+    <tr onclick="${selectMode?'':'openModal('+employees.indexOf(e)+')'}" class="${selectedEmpNos.has(String(e.empNo))?'sel-row':''}">
+      ${selectMode?`<td class="cb-col" onclick="event.stopPropagation()"><input type="checkbox" class="row-cb" data-empno="${e.empNo}" ${selectedEmpNos.has(String(e.empNo))?'checked':''} onchange="toggleRow('${e.empNo}',this)"></td>`:''}
+      <td class="stk" style="min-width:130px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div>
+            <div class="nm" title="${e.name}">${e.name}</div>
+            <div class="en">#${e.empNo}</div>
+          </div>
+          ${!selectMode?`<button onclick="event.stopPropagation();quickDelete(${employees.indexOf(e)})" title="Xóa nhân viên này" style="background:none;border:none;cursor:pointer;color:var(--text-muted);padding:2px 4px;border-radius:4px;font-size:13px;opacity:0;transition:opacity .1s" class="quick-del-btn"><i class="ti ti-user-minus"></i></button>`:''}
+        </div>
+      </td>
+      <td style="color:var(--text-secondary)">${e.bu}</td>
+      <td style="color:var(--text-secondary)">${e.pos}</td>
+      <td onclick="event.stopPropagation()">${pathSelectInline(employees.indexOf(e))}</td>
+      <td>${losCell(e)}</td>
+      <td>${perfCell(e.p24)}</td>
+      <td>${perfCell(e.p25)}</td>
+      <td>${perfCell(e.p26)}</td>
+      <td>${e.perfOK==='Yes'?'<span class="tag t-green">Yes</span>':e.perfOK==='No'?'<span class="tag t-red">No</span>':'<span class="tag t-gray">N/A</span>'}</td>
+      <td>${e.qualified_seniority?'<span class="tag t-green">Yes</span>':'<span class="tag t-gray">No</span>'}</td>
+      <td>${devQTag(e)}</td>
+      <td>${readyTag(e.ready,e)}</td>
+      <td style="color:var(--text-secondary);font-size:11px">${e.retDone||'—'}</td>
+      <td>${waveTag(e.retWave)}</td>
+      <td style="color:var(--text-secondary);font-size:11px">${e.nextP}</td>
+      <td style="color:var(--text-muted);font-size:11px">${fmtD(e.nextPDate)}</td>
+      <td class="div-col" onclick="event.stopPropagation()">${retRSel(employees.indexOf(e))}</td>
+      <td onclick="event.stopPropagation()">${promoRSel(employees.indexOf(e))}</td>
+    </tr>`).join('');
+}
+
+/* ══════════════════════════════════════════════════
+   TAB 2: LEARNING
+══════════════════════════════════════════════════ */
+function buildHeadL(){
+  const allCourses=Object.values(COURSE_CONFIG).flat();
+  const grpCls={QS:'th-qs','QS Leader':'th-qsl','D.PM':'th-dpm'};
+  const grpCounts={QS:COURSE_CONFIG.QS.length,'QS Leader':COURSE_CONFIG['QS Leader'].length,'D.PM':COURSE_CONFIG['D.PM'].length};
+
+  let r1=`<tr>
+    <th class="stk" colspan="4" style="min-width:130px">Nhân viên</th>
+    <th class="th-site" colspan="1">Site Exp<br><span style="font-size:8px;background:#fdecea;color:#8b1a1a;padding:1px 5px;border-radius:999px">MUST (Mgmt)</span></th>
+    <th class="th-qs" colspan="${grpCounts.QS}">QS (${grpCounts.QS} khóa)</th>
+    <th class="th-qsl" colspan="${grpCounts['QS Leader']}">QS Leader (${grpCounts['QS Leader']} khóa)</th>
+    <th class="th-dpm" colspan="${grpCounts['D.PM']}">D.PM (${grpCounts['D.PM']} khóa)</th>
+  </tr>`;
+
+  let r2=`<tr>
+    <th class="stk th-qs" style="min-width:130px" onclick="sortL('name')">Tên</th>
+    <th>BU</th><th>Chức danh</th>
+    <th onclick="sortL('pct')">Done</th>
+    <th class="th-site cc" title="Site experience — MUST cho QS Leader Management Path">SITE</th>
+    ${COURSE_CONFIG.QS.map(c=>`<th class="th-qs cc" title="${c.name}">${c.code}</th>`).join('')}
+    ${COURSE_CONFIG['QS Leader'].map(c=>`<th class="th-qsl cc" title="${c.name}">${c.code}</th>`).join('')}
+    ${COURSE_CONFIG['D.PM'].map(c=>`<th class="th-dpm cc" title="${c.name}">${c.code}</th>`).join('')}
+  </tr>`;
+  document.getElementById('headL').innerHTML=r1+r2;
+}
+
+function filteredL(){
+  const q=(document.getElementById('srchL').value||'').toLowerCase();
+  const fp=document.getElementById('fPosL').value;
+  const fb=document.getElementById('fBUL').value;
+  const fpa=document.getElementById('fPathL').value;
+  const fd=document.getElementById('fDevL').value;
+  return employees.filter(e=>{
+    if(q&&!e.name.toLowerCase().includes(q)&&!String(e.empNo).includes(q))return false;
+    if(fp&&e.pos!==fp)return false;
+    if(fb&&e.bu!==fb)return false;
+    if(fpa&&e.devPath!==fpa)return false;
+    if(fd&&e.devQ!==fd)return false;
+    return true;
+  }).sort((a,b)=>{
+    if(!skL)return 0;
+    let av=a[skL],bv=b[skL];
+    if(typeof av==='number'&&typeof bv==='number')return saL?av-bv:bv-av;
+    return saL?String(av||'').localeCompare(String(bv||''),'vi'):String(bv||'').localeCompare(String(av||''),'vi');
+  });
+}
+function sortL(k){saL=skL===k?!saL:true;skL=k;renderL();}
+
+function siteStatusBtn(e,inTable=true){
+  const i=employees.indexOf(e);
+  if(!e.siteAppl)return`<span class="cs-na" style="font-size:14px">·</span>`;
+  const st=e.siteStatus||'Not Started';
+  const cfg={
+    'Not Started':{cls:'sn',icon:'ti-circle-dashed',label:'Not Started'},
+    'Progressing': {cls:'sp',icon:'ti-loader',      label:'Progressing'},
+    'Done':        {cls:'sd',icon:'ti-circle-check', label:'Done'},
+  };
+  const c=cfg[st]||cfg['Not Started'];
+  return`<span class="site-btn ${c.cls}" onclick="event.stopPropagation();openSiteModal(${i})">
+    <i class="ti ${c.icon}" style="font-size:11px"></i>${inTable?'':c.label}
+  </span>`;
+}
+function cCell(e,code,isSite){
+  if(isSite){
+    if(!e.siteAppl)return`<td class="cc"><span class="cs-na" style="font-size:14px">·</span></td>`;
+    return`<td class="cc" onclick="event.stopPropagation()">${siteStatusBtn(e,true)}</td>`;
+  }
+  const pk=posKey(e.pos);const levelOrder=['QS','QS Leader','D.PM'];
+  const curIdx=levelOrder.indexOf(pk);
+  const courseLevel=Object.keys(COURSE_CONFIG).find(lv=>(COURSE_CONFIG[lv]||[]).some(c=>c.code===code));
+  const cIdx=levelOrder.indexOf(courseLevel);
+  if(cIdx>curIdx)return`<td class="cc"><span class="cna" style="font-size:12px">·</span></td>`;
+  if(e.courses[code])return`<td class="cc"><span class="cd"><i class="ti ti-check"></i></span></td>`;
+  return`<td class="cc"><span class="ctd"></span></td>`;
+}
+
+function progCell(e){
+  const col=e.pct===100&&e.siteOK?'var(--green)':e.pct>0?'var(--accent)':'var(--border-strong)';
+  return`<div class="pm"><div class="pm-lbl">${e.doneC}/${e.totalC} (${e.pct}%)</div><div class="pm-bg"><div class="pm-fill" style="width:${e.pct}%;background:${col}"></div></div></div>`;
+}
+
+function renderL(){
+  const rows=filteredL();
+  document.getElementById('cShL').textContent=rows.length;document.getElementById('cToL').textContent=employees.length;
+  const allCourses=Object.values(COURSE_CONFIG).flat();
+  if(!rows.length){document.getElementById('tbodyL').innerHTML='<tr><td colspan="30" style="text-align:center;padding:2rem;color:var(--text-muted)">Không có kết quả</td></tr>';return;}
+  document.getElementById('tbodyL').innerHTML=rows.map(e=>`
+    <tr onclick="openModal(${employees.indexOf(e)})">
+      <td class="stk" style="min-width:130px"><div class="nm" title="${e.name}">${e.name}</div><div class="en">#${e.empNo} ${pathTag(e.devPath)}</div></td>
+      <td style="color:var(--text-secondary)">${e.bu}</td>
+      <td style="color:var(--text-secondary)">${e.pos}</td>
+      <td>${progCell(e)}</td>
+      ${cCell(e,'SITE',true)}
+      ${allCourses.map(c=>cCell(e,c.code,false)).join('')}
+    </tr>`).join('');
+}
+
+/* ══════════════════════════════════════════════════
+   TAB 3: COURSE CONFIG UI
+══════════════════════════════════════════════════ */
+function buildConfigUI(){
+  const levels=['QS','QS Leader','D.PM'];
+  const colors={QS:'#16315E','QS Leader':'#185fa5','D.PM':'#4a2d9c'};
+  document.getElementById('configGrid').innerHTML=levels.map(lv=>`
+    <div class="config-group">
+      <h4 style="color:${colors[lv]}">${lv}
+        <span style="font-size:10px;font-weight:400;color:var(--text-muted)">${(COURSE_CONFIG[lv]||[]).length}/6 khóa</span>
+      </h4>
+      <div id="courseList_${lv.replace(/[^a-z]/gi,'_')}">
+        ${(COURSE_CONFIG[lv]||[]).map((c,i)=>`
+          <div class="course-input-row" id="cr_${lv.replace(/[^a-z]/gi,'_')}_${i}">
+            <span class="ci-code">${c.code}</span>
+            <input type="text" value="${c.name}" data-level="${lv}" data-idx="${i}" onchange="updateCourseName(this)">
+            <button class="btn-sm" onclick="removeCourse('${lv}',${i})" title="Xóa khóa này"><i class="ti ti-x" style="font-size:12px"></i></button>
+          </div>`).join('')}
+      </div>
+      ${(COURSE_CONFIG[lv]||[]).length<6?`<button class="btn-add" onclick="addCourse('${lv}')"><i class="ti ti-plus"></i> Thêm khóa</button>`:''}
+    </div>`).join('');
+}
+
+function updateCourseName(input){
+  const lv=input.dataset.level;const idx=parseInt(input.dataset.idx);
+  if(COURSE_CONFIG[lv]&&COURSE_CONFIG[lv][idx])COURSE_CONFIG[lv][idx].name=input.value;
+}
+
+function addCourse(lv){
+  if(!COURSE_CONFIG[lv])COURSE_CONFIG[lv]=[];
+  if(COURSE_CONFIG[lv].length>=6)return;
+  const prefix={QS:'QS',_QSL:'QSL','QS Leader':'QSL','D.PM':'DPM'}[lv]||lv.slice(0,3).toUpperCase();
+  const nextNum=COURSE_CONFIG[lv].length+1;
+  COURSE_CONFIG[lv].push({code:`${prefix}${nextNum}`,name:'Tên khóa học...'});
+  buildConfigUI();
+}
+
+function removeCourse(lv,idx){
+  if(!COURSE_CONFIG[lv])return;
+  COURSE_CONFIG[lv].splice(idx,1);
+  buildConfigUI();
+}
+
+async function saveConfig(){
+  // Re-calc all employees with new config
+  employees.forEach(e=>{
+    const allCodes=['SITE',...Object.values(COURSE_CONFIG).flat().map(c=>c.code)];
+    allCodes.forEach(code=>{if(!(code in e.courses))e.courses[code]=false;});
+    calcAll(e);
+  });
+  buildHeadL();buildConfigUI();renderKPIs();renderR();renderL();
+  // Upsert course_config lên Supabase
+  const rows=[];
+  Object.keys(COURSE_CONFIG).forEach(level=>{
+    (COURSE_CONFIG[level]||[]).forEach(c=>{
+      rows.push({code:c.code, level:level, name:c.name});
+    });
+  });
+  const {error}=await supabase.from('course_config').upsert(rows,{onConflict:'code'});
+  if(error)console.error('saveConfig upsert error:',error);
+  // Visual feedback
+  const btn=document.querySelector('.btn-save-config');
+  btn.innerHTML='<i class="ti ti-check"></i> Đã lưu!';
+  setTimeout(()=>{btn.innerHTML='<i class="ti ti-device-floppy"></i> Lưu cấu hình';},1500);
+}
+
+/* ══════════════════════════════════════════════════
+   MODAL (unified)
+══════════════════════════════════════════════════ */
+function openModal(i){
+  const e=employees[i];
+  document.getElementById('mTitle').textContent=e.name;
+  const ini=e.name.trim().split(' ').slice(-2).map(w=>w[0]||'').join('').toUpperCase();
+  const pk=posKey(e.pos);const t=THRESH[pk]||2;
+  const pct=e.los!==null?Math.min(100,Math.round((e.los/t)*100)):0;
+  const losCol=pct>=100?'var(--green)':'var(--accent)';
+  const cur=POS_ORDER.findIndex(p=>p===e.pos||(p.startsWith('D.PM')&&e.pos.startsWith('D.PM')));
+
+  // Readiness explanation
+  let rClass='rneutral',rIcon='ti-info-circle',rHtml='';
+  if(e.ready==='Yes - Ready'){rClass='rok';rIcon='ti-circle-check';rHtml=`<strong style="color:#1a6b33">Yes - Ready</strong> — Đủ cả 3 điều kiện: thâm niên, performance và development.`;}
+  else if(e.ready==='Learning Pending'){rClass='rwarn';rIcon='ti-book';rHtml=`<strong style="color:#4a2d9c">Learning Pending</strong> — Đủ thâm niên và performance nhưng chưa hoàn thành điều kiện Development.`;}
+  else if(e.siteBlocked){rClass='rwarn';rIcon='ti-lock';rHtml=`<strong style="color:#8b1a1a">Site Exp chưa hoàn thành</strong> — MUST HAVE cho QS Leader Management Path.`;}
+  else if(e.ready==='Đủ năm, chờ Perf'){rHtml=`<strong>Đủ năm, chờ Performance</strong> — ${e.los!==null?e.los.toFixed(1):0}y / ${t}y. Performance 2 năm gần nhất chưa đạt HE/O liên tiếp.`;}
+  else{rHtml=`<strong>Not Yet</strong> — Thâm niên ${e.los!==null?e.los.toFixed(1):'?'}y / ${t}y yêu cầu.`;}
+
+  const allCourses=Object.values(COURSE_CONFIG).flat();
+  const levelOrder=['QS','QS Leader','D.PM'];
+  const curIdx=levelOrder.indexOf(pk);
+  const applicableCourses=allCourses.filter(c=>{
+    const cLv=Object.keys(COURSE_CONFIG).find(lv=>(COURSE_CONFIG[lv]||[]).some(cc=>cc.code===c.code));
+    return levelOrder.indexOf(cLv)<=curIdx;
+  });
+  const missingC=applicableCourses.filter(c=>!e.courses[c.code]);
+  const doneC2=applicableCourses.filter(c=>e.courses[c.code]);
+
+  document.getElementById('mBody').innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem">
+      <div class="avatar">${ini}</div>
+      <div>
+        <div style="font-size:16px;font-weight:500;margin-bottom:2px">${e.name}</div>
+        <div style="font-size:11px;color:var(--text-muted)">#${e.empNo} &middot; ${e.bu} &middot; ${e.pos} &middot; ${pathTag(e.devPath)}</div>
+      </div>
+    </div>
+
+    <div class="rcard ${rClass}" style="display:flex;align-items:flex-start;gap:8px;font-size:12px">
+      <i class="ti ${rIcon}" style="font-size:16px;flex-shrink:0;margin-top:1px"></i><div>${rHtml}</div>
+    </div>
+
+    <div class="msec"><i class="ti ti-id-badge"></i>Thông tin cơ bản</div>
+    <div class="dgrid">
+      <div class="dc"><div class="dl">Chức danh</div><div class="dv">${e.pos}</div></div>
+      <div class="dc"><div class="dl">Development Path</div><div class="dv">${e.devPath||'—'}</div></div>
+      <div class="dc"><div class="dl">Thâm niên tại vị trí HT</div><div class="dv">${e.los!==null?e.los.toFixed(1)+' năm':'—'}</div></div>
+      <div class="dc"><div class="dl">Ngày bắt đầu chức danh</div><div class="dv">${fmtDFull(e.ngayBD)}</div></div>
+    </div>
+
+    <div class="msec"><i class="ti ti-chart-bar"></i>Điều kiện 1 — Performance</div>
+    <div class="dgrid">
+      <div class="dc"><div class="dl">Performance FY24 / FY25 / FY26</div>
+        <div style="display:flex;gap:10px;margin-top:4px">${perfCell(e.p24)} ${perfCell(e.p25)} ${perfCell(e.p26)}</div></div>
+      <div class="dc"><div class="dl">Qualified Perf? (2yr HE/O)</div>
+        <div style="margin-top:5px">${e.perfOK==='Yes'?'<span class="tag t-green"><i class="ti ti-check"></i>Yes</span>':e.perfOK==='No'?'<span class="tag t-red"><i class="ti ti-x"></i>No</span>':'<span class="tag t-gray">N/A</span>'}</div></div>
+    </div>
+
+    <div class="msec"><i class="ti ti-clock"></i>Điều kiện 2 — Thâm niên</div>
+    <div class="prog-wrap">
+      <div class="prog-row"><span>Qualified Thâm niên</span><span>${pct}% (${e.los!==null?e.los.toFixed(1):0}y / ${t}y)</span></div>
+      <div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:${losCol}"></div></div>
+    </div>
+
+    <div class="msec"><i class="ti ti-book"></i>Điều kiện 3 — Development</div>
+    <div class="dc" style="margin-bottom:.75rem">
+      <div class="dl">Tiến độ khóa học (bắt buộc hoàn thành)</div>
+      <div style="margin-top:6px">
+        <div class="prog-row"><span>${e.doneC}/${e.totalC} khóa</span><span>${e.pct}% &nbsp; ${devQTag(e)}</span></div>
+        <div class="prog-bg"><div class="prog-fill" style="width:${e.pct}%;background:${e.pct===100?'var(--green)':'var(--accent)'}"></div></div>
+      </div>
+    </div>
+
+    ${e.siteAppl?`
+    <div class="clist" style="margin-bottom:.75rem">
+      <div class="ci ${e.courses.SITE?'sdone':'smiss'}">
+        <div class="cii ${e.courses.SITE?'sdone':'smiss'}"><i class="ti ${e.courses.SITE?'ti-check':'ti-alert-triangle'}"></i></div>
+        <div style="flex:1;font-size:11px">Site experience (kiêm nhiệm TN QA/QC, TN SHOP, GSC TC)</div>
+        <span class="must-pill">MUST HAVE</span>
+        <span style="font-size:11px;font-weight:500;color:${e.courses.SITE?'var(--green)':'var(--red)'}">${e.courses.SITE?'Done':'Chưa có'}</span>
+      </div>
+    </div>`:''}
+
+    ${missingC.length?`
+    <div style="font-size:10px;font-weight:600;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;margin:.625rem 0 .375rem">Còn thiếu ${missingC.length} khóa bắt buộc</div>
+    <div class="clist">${missingC.map(function(c){return '<div class="ci"><div class="cii todo"><i class="ti ti-minus"></i></div><div style="flex:1;font-size:11px"><strong>'+c.code+'</strong> — '+c.name+'</div></div>';}).join('')}</div>`:''}
+    ${doneC2.length?`
+    <div style="font-size:10px;font-weight:600;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;margin:.75rem 0 .375rem">Đã hoàn thành ${doneC2.length} khóa</div>
+    <div class="clist">${doneC2.map(function(c){return '<div class="ci done"><div class="cii done"><i class="ti ti-check"></i></div><div style="flex:1;font-size:11px"><strong>'+c.code+'</strong> — '+c.name+'</div></div>';}).join('')}</div>`:''}
+
+    <div class="msec"><i class="ti ti-gift"></i>Retention</div>
+    <div class="dgrid">
+      <div class="dc"><div class="dl">Received Retention?</div><div class="dv" style="margin-top:3px">${e.retDone||'Chưa nhận'}</div></div>
+      <div class="dc"><div class="dl">Next Retention (Plan)</div><div style="margin-top:5px">${waveTag(e.retWave)}</div></div>
+      <div class="dc" style="grid-column:span 2"><div class="dl">Next position (Plan)</div><div class="dv">${e.nextP}</div></div>
+    </div>
+
+    <div class="msec" style="color:var(--blue);border-top:.5px solid var(--border);padding-top:.875rem;margin-top:1rem">
+      <i class="ti ti-list-check"></i>Reality Status <span style="font-size:9px;font-weight:400;color:var(--text-muted)">click để cập nhật</span>
+    </div>
+    <div class="dgrid" style="margin-bottom:.875rem">
+      <div class="dc"><div class="dl">Reality Retention</div><div style="margin-top:5px">${retRSel(i)}</div></div>
+      <div class="dc"><div class="dl">Reality Promotion</div>
+        <div class="promo-grid">
+          ${[{v:'Promoted',ic:'ti-circle-check',cls:'ap'},{v:'On process of promoting',ic:'ti-loader',cls:'ao'},{v:'On waiting list',ic:'ti-clock-pause',cls:'aw'}].map(p=>`
+          <div class="popt ${e.promoR===p.v?p.cls:''}" onclick="setPromoModal(${i},'${p.v}',this)">
+            <span class="popt-ic"><i class="ti ${p.ic}"></i></span>
+            <span style="font-size:10px">${p.v==='On process of promoting'?'On process':p.v}</span>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="msec"><i class="ti ti-map-2"></i>Lộ trình phát triển</div>
+    <div class="tl">
+      ${['QS','QS Leader',e.devPath==='Expertise Path'?'D.PM (Office)':'D.PM (Site)'].map((p,idx)=>{
+        const st=idx<cur?'done':idx===cur?'now':'future';
+        const sub=idx<cur?'Đã hoàn thành':idx===cur?'Đang ở giai đoạn này':'Giai đoạn tiếp theo';
+        return`<div class="tl-item"><div class="tdot ${st}"></div><div class="tn">${p}${idx<cur?' <i class="ti ti-check" style="color:var(--green);font-size:10px"></i>':idx===cur?' <i class="ti ti-map-pin" style="color:var(--accent);font-size:10px"></i>':''}</div><div class="ts">${sub}</div></div>`;
+      }).join('')}
+    </div>
+  `;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function setPromoModal(i,val,el){
+  employees[i].promoR=val;
+  el.closest('.promo-grid').querySelectorAll('.popt').forEach(o=>o.classList.remove('ap','ao','aw'));
+  el.classList.add(val==='Promoted'?'ap':val==='On process of promoting'?'ao':'aw');
+  renderKPIs();renderR();
+  updateEmployeeField(employees[i].empNo,{promo_r:val});
+}
+function closeModal(){document.getElementById('overlay').classList.remove('open');}
+function closeBg(e){if(e.target.id==='overlay')closeModal();}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+/* ══════════════════════════════════════════════════
+   TAB SWITCH
+══════════════════════════════════════════════════ */
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  btn.classList.add('active');
+  currentTab=id;
+  if(id==='config')buildConfigUI();
+}
+
+/* Mỗi trang có 1 file import riêng: Retention & Promotion -> fileRet, Learning & Development -> fileLrn */
+function openImportForTab(){
+  if(currentTab==='learning'){document.getElementById('fileLrn').click();}
+  else{document.getElementById('fileRet').click();}
+}
+
+/* ══════════════════════════════════════════════════
+   EXPORT
+══════════════════════════════════════════════════ */
+function exportCSV(tab){
+  if(!employees.length)return;
+  let hdrs,rows;
+  const allC=Object.values(COURSE_CONFIG).flat();
+  if(tab==='R'){
+    hdrs=['STT','Emp No','Tên','BU','Chức danh','Dev Path','Ngày BD chức danh','LOS(y)','Perf FY24','Perf FY25','Perf FY26','Qualified Perf?','Qualified Thâm niên?','Learning Qualified?','Promote Readiness','Ret Wave(Plan)','Hạn Ret','Next Pos(Plan)','Dự kiến Promote','Ret đã nhận','Reality Ret','Reality Promo'];
+    rows=employees.map(e=>[e.stt,e.empNo,e.name,e.bu,e.pos,e.devPath,fmtDFull(e.ngayBD),e.los?e.los.toFixed(1):'',e.p24,e.p25,e.p26,e.perfOK,e.qualified_seniority?'Yes':'No',e.devQ,e.ready,e.retDone||'',e.retWave,e.nextP,fmtD(e.nextPDate),e.retDone,e.retR||'',e.promoR||'']);
+  } else {
+    hdrs=['STT','Emp No','Tên','BU','Chức danh','Dev Path','Site Exp',...allC.map(c=>c.code),'Done%','Còn thiếu','Learning Qualified?'];
+    rows=employees.map(e=>[e.stt,e.empNo,e.name,e.bu,e.pos,e.devPath,e.siteAppl?(e.courses.SITE?'Done':'Missing'):'N/A',...allC.map(c=>{const pk=posKey(e.pos);const lv=Object.keys(COURSE_CONFIG).find(l=>(COURSE_CONFIG[l]||[]).some(cc=>cc.code===c.code));const cIdx=['QS','QS Leader','D.PM'].indexOf(lv);const curIdx=['QS','QS Leader','D.PM'].indexOf(pk);return cIdx<=curIdx?(e.courses[c.code]?'Done':'To do'):'N/A';}),e.pct+'%',e.missingC.length,e.devQ]);
+  }
+  const csv=[hdrs,...rows].map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv'}));
+  a.download=`QS_${tab==='R'?'Retention':'Learning'}_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+}
+
+
+
+function toggleAN(btn){var d=btn.nextElementSibling;d.style.display=d.style.display==='none'?'block':'none';btn.textContent=d.style.display==='none'?'Xem danh sách ▼':'Thu gọn ▲';}
+
+/* ── Select & Delete ── */
+var selectMode=false;
+var selectedEmpNos=new Set();
+
+
+function quickDelete(i){
+  var e=employees[i];
+  if(!e)return;
+  selectedEmpNos=new Set([String(e.empNo)]);
+  confirmDelete();
+}
+function toggleSelectMode(){
+  selectMode=!selectMode;
+  var btn=document.getElementById('selectModeBtn');
+  btn.classList.toggle('active',selectMode);
+  btn.innerHTML=selectMode
+    ?'<i class="ti ti-x"></i> Thoát chọn'
+    :'<i class="ti ti-checkbox"></i> Chọn để xóa';
+  if(!selectMode){selectedEmpNos.clear();}
+  document.getElementById('delBar').classList.toggle('show',selectMode);
+  buildHeadR();renderR();
+}
+
+function exitSelectMode(){
+  selectMode=false;selectedEmpNos.clear();
+  document.getElementById('selectModeBtn').classList.remove('active');
+  document.getElementById('selectModeBtn').innerHTML='<i class="ti ti-checkbox"></i> Chọn để xóa';
+  document.getElementById('delBar').classList.remove('show');
+  buildHeadR();renderR();
+}
+
+function toggleRow(empNo,cb){
+  if(cb.checked)selectedEmpNos.add(empNo);
+  else selectedEmpNos.delete(empNo);
+  document.getElementById('selCount').textContent=selectedEmpNos.size;
+  var row=cb.closest('tr');
+  if(row)row.classList.toggle('sel-row',cb.checked);
+}
+
+function toggleSelectAll(cb){
+  var rows=document.querySelectorAll('#tbodyR .row-cb');
+  rows.forEach(function(r){
+    r.checked=cb.checked;
+    var empNo=r.dataset.empno;
+    if(cb.checked)selectedEmpNos.add(empNo);
+    else selectedEmpNos.delete(empNo);
+    var tr=r.closest('tr');
+    if(tr)tr.classList.toggle('sel-row',cb.checked);
+  });
+  document.getElementById('selCount').textContent=selectedEmpNos.size;
+}
+
+function confirmDelete(){
+  if(selectedEmpNos.size===0)return;
+  var names=employees.filter(function(e){return selectedEmpNos.has(String(e.empNo));}).map(function(e){return e.name;});
+  document.getElementById('confirmMsg').innerHTML=
+    'Sẽ xóa <strong>'+selectedEmpNos.size+' nhân viên</strong> khỏi web tracker:<br>'
+    +'<span style="font-size:12px;color:var(--text-muted)">'+names.slice(0,5).join(', ')+(names.length>5?' và '+(names.length-5)+' người khác':'')+'</span><br><br>'
+    +'<strong>Không ảnh hưởng đến file Excel gốc.</strong> Có thể import lại bất cứ lúc nào.';
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+
+function closeConfirm(){document.getElementById('confirmOverlay').classList.remove('open');}
+
+function executeDelete(){
+  var empNosToDelete=Array.from(selectedEmpNos);
+  employees=employees.filter(function(e){return !selectedEmpNos.has(String(e.empNo));});
+  selectedEmpNos.clear();
+  closeConfirm();
+  exitSelectMode();
+  renderKPIs();renderR();renderL();
+  softDeleteEmployees(empNosToDelete);
+}
+/* ── Site Experience Modal ── */
+let siteModalIdx = -1;
+
+function openSiteModal(i){
+  siteModalIdx = i;
+  const e = employees[i];
+  document.getElementById('smTitle').textContent = 'Site Experience — ' + e.name;
+  renderSiteModalBody(i);
+  document.getElementById('siteModal').classList.add('open');
+}
+
+function renderSiteModalBody(i){
+  const e = employees[i];
+  const st = e.siteStatus || 'Not Started';
+  const tabs = [
+    {v:'Not Started', icon:'ti-circle-dashed', label:'Not Started', cls:'active-ns'},
+    {v:'Progressing',  icon:'ti-loader',       label:'Progressing',  cls:'active-pr'},
+    {v:'Done',         icon:'ti-circle-check', label:'Done',         cls:'active-dn'},
+  ];
+
+  const projsHtml = (e.siteProjects||[]).map((p,pi)=>`
+    <div class="proj-card" id="proj_${i}_${pi}">
+      <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="proj-label">Dự án:</span>
+          <input type="text" value="${p.name||''}" placeholder="Tên dự án thực tế..." oninput="updateProj(${i},${pi},'name',this.value)">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="proj-label">Từ:</span>
+          <input type="date" value="${p.start||''}" onchange="updateProj(${i},${pi},'start',this.value)">
+          <span class="proj-label">Đến:</span>
+          <input type="date" value="${p.end||''}" onchange="updateProj(${i},${pi},'end',this.value)">
+        </div>
+      </div>
+      <button class="btn-rm-proj" onclick="removeProj(${i},${pi})" title="Xóa dự án"><i class="ti ti-trash" style="font-size:14px"></i></button>
+    </div>`).join('');
+
+  document.getElementById('smBody').innerHTML = `
+    <div class="status-tabs">
+      ${tabs.map(t=>`
+        <div class="stab ${st===t.v?t.cls:''}" onclick="setSiteStatus(${i},'${t.v}')">
+          <span class="stab-ic"><i class="ti ${t.icon}"></i></span>${t.label}
+        </div>`).join('')}
+    </div>
+
+    <div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:.5rem;display:flex;align-items:center;justify-content:space-between">
+      <span><i class="ti ti-building" style="font-size:13px"></i> Dự án thực tế tham gia</span>
+      <span style="font-size:10px;font-weight:400;color:var(--text-muted)">${(e.siteProjects||[]).length} dự án</span>
+    </div>
+    <div class="proj-list">${projsHtml||'<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:.5rem">Chưa có dự án nào được ghi nhận</div>'}</div>
+    <button class="btn-add-proj" onclick="addProj(${i})"><i class="ti ti-plus"></i> Thêm dự án</button>
+
+    ${st==='Done'?'<div style="font-size:12px;color:#1a6b33;background:#e8f5e9;border:.5px solid #c8e6c9;border-radius:var(--radius);padding:.625rem .875rem;margin-top:.75rem"><i class="ti ti-circle-check"></i> Site Experience đã hoàn thành — đủ điều kiện promote (cùng với thâm niên và performance).</div>':''}
+    ${st==='Progressing'?'<div style="font-size:12px;color:#7a4f00;background:#fef3cd;border:.5px solid #ffe082;border-radius:var(--radius);padding:.625rem .875rem;margin-top:.75rem"><i class="ti ti-loader"></i> Đang trong quá trình tích lũy site experience. Cập nhật tiến độ định kỳ.</div>':''}
+    ${st==='Not Started'?'<div style="font-size:12px;color:var(--text-muted);background:var(--surface);border:.5px solid var(--border);border-radius:var(--radius);padding:.625rem .875rem;margin-top:.75rem"><i class="ti ti-circle-dashed"></i> Chưa bắt đầu. Cần lên kế hoạch để QS Leader này tham gia dự án site.</div>':''}
+
+    <button class="site-save-btn" onclick="saveSiteModal()"><i class="ti ti-device-floppy"></i> Lưu & Đóng</button>
+  `;
+}
+
+function setSiteStatus(i,status){
+  employees[i].siteStatus = status;
+  calcAll(employees[i]);
+  renderSiteModalBody(i);
+  renderKPIs(); renderR(); renderL();
+}
+
+function addProj(i){
+  if(!employees[i].siteProjects) employees[i].siteProjects=[];
+  employees[i].siteProjects.push({name:'',start:'',end:''});
+  renderSiteModalBody(i);
+}
+
+function removeProj(i,pi){
+  employees[i].siteProjects.splice(pi,1);
+  renderSiteModalBody(i);
+}
+
+function updateProj(i,pi,field,val){
+  if(!employees[i].siteProjects[pi]) return;
+  employees[i].siteProjects[pi][field] = val;
+}
+
+function saveSiteModal(){
+  if(siteModalIdx>=0){
+    var e=employees[siteModalIdx];
+    updateEmployeeField(e.empNo,{site_status:e.siteStatus,site_projects:e.siteProjects||[]});
+  }
+  closeSiteModal();
+}
+
+function closeSiteModal(ev){
+  if(ev&&ev.target.id!=='siteModal')return;
+  document.getElementById('siteModal').classList.remove('open');
+  siteModalIdx=-1;
+}
+/* ══════════════════════════════════════════════════
+   DARK + INIT
+══════════════════════════════════════════════════ */
+function toggleDark(){document.documentElement.hasAttribute('data-dark')?document.documentElement.removeAttribute('data-dark'):document.documentElement.setAttribute('data-dark','');}
+// loadDemo() không còn tự chạy khi mở trang — dùng nút "Xem Demo" nếu cần xem dữ liệu mẫu
+
+// Khởi động: kiểm tra session Supabase, hiện màn hình login nếu chưa đăng nhập
+checkSessionOnLoad();
+</script>
+</body>
+</html>
